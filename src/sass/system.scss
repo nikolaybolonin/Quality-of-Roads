@@ -1,0 +1,72 @@
+html,
+body,
+section,
+.map {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+section {
+  display: flex;
+}
+
+#meta_data_container {
+  display: flex;
+  position: relative;
+  z-index: 10;
+  opacity: 0.95;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  min-width: 300px;
+  max-width: 300px;
+  background: #333 url(http://img-fotki.yandex.ru/get/6425/5091629.7e/0_706a3_c525a707_L.jpg);
+}
+
+#map_with_google_api {
+  position: relative;
+  width: calc(100%);
+  min-width: 300px;
+  position: absolute;
+  min-height: 100%;
+
+}
+
+.controls {
+  min-height: 29px;
+  margin: 5px;
+  margin-bottom: 0;
+  width: 100%;
+  border: none;
+  border-radius: 2px 0 0 2px;
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  outline: none;
+  box-shadow: inset 0 0 2px 2px rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0);
+  color: #fff;
+  font-family: Roboto;
+  font-size: 15px;
+  font-weight: 300;
+  padding: 0 11px 0 13px;
+  text-overflow: ellipsis;
+}
+
+.controls:focus {
+  box-shadow: inset 0 0 2px 2px rgba(255, 255, 255, 1);
+}
+
+#map_current_parameters_label {
+  width: 250px;
+}
+
+#go_to_coords {
+  margin-left: 0;
+  width: 35px;
+}
+
+#map_address_input {}
+
+#selected_line_options {
+  padding: 10px;
+}
