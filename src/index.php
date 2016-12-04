@@ -26,16 +26,6 @@
     /* PAGE SPECIFIC HTML CONTENT
     /* ======================================================================== -->
 
-    <!-- START SECTION -->
-    <section id="main_section" class="main_central_section">
-      <div id="chart_container"></div>
-
-      <button id="refresh_chart">
-        Обновить
-      </button>
-    </section>
-    <!-- END OF SECTION -->
-
 
     <!-- START SECTION -->
     <section id="map_section" class="main_central_section">
@@ -62,11 +52,9 @@
 
   <!-- END OF SECTIONS -->
 
-  <!-- JAVASCRIPT highcharts LIBRARIES -->
-  <!-- Другие библиотеки не использовал -->
-  <script language="javascript" type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+  <!-- JAVASCRIPT  LIBRARIES -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?sensor=false&key=AIzaSyBHpAmimxTn6JfSP_-1PavnZ9WvAE6eCtc&libraries=places&callback=initAutocomplete" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?sensor=false&key=AIzaSyB8xXdwtq6zIPTpDTmL4aHph2QqNp_ZfZg&libraries=places&callback=googleMapInit" async defer></script>
 
 
 

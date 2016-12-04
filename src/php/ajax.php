@@ -41,27 +41,51 @@ $MY_TABLE_TYPE = "TABLE_TYPE = 'BASE TABLE'";
 <?php  /* Описание функций */
 
 /* Функция SELECT поискового запроса */
-function my_sql_select($my_query, $my_db){
+function my_sql_select_to_geojson($my_query, $my_db){
     /* Вытаскиваем данные по запросу */
 	$query_result = mysql_query($my_query,$my_db);
 	if (mysql_num_rows($query_result) > 0){
-		$query_result_fetch_array = mysql_fetch_array($query_result);
-		$row_id = 0;
-		do{
-			$row_id++;
 
-			foreach ($query_result_fetch_array as $key => $value) {
-				if (!is_numeric($key)){
-					$query_result_main_array[$row_id][$key] = $value;
-				}
-			}
+		# Build GeoJSON feature collection array
+		$geojson = array(
+		   'type'      => 'FeatureCollection',
+		   'features'  => array()
+		);
+		# Loop through rows to build feature arrays
+		while($row = mysql_fetch_assoc($query_result)) {
+
+		    $feature = array(
+		        'id' => $row['ID'],
+		        'type' => 'Feature',
+		        'geometry' => array(
+		            'type' => 'MultiLineString',
+		            # Pass Longitude and Latitude Columns here
+		            'coordinates' => array(
+		            	array(
+		            		array(floatval($row['START_LNG']), floatval($row['START_LAT'])),
+		            		array(floatval($row['END_LNG']), floatval($row['END_LAT']))
+		            		)
+		            	)
+		        ),
+		        # Pass other attribute columns here
+		        'properties' => array(
+					"name" => $row['NAME'],
+					"surface" => $row['SURFACE'],
+					"width" => $row['WIDTH'],
+					"populousness" => $row['POPULOUSNESS'],
+					"quality" => $row['QUALITY'],
+					"rating" => $row['RATING'],
+					"color" => $row['COLOR']
+		            )
+		        );
+		    # Add feature arrays to feature collection array
+		    array_push($geojson['features'], $feature);
 		}
-		while($query_result_fetch_array = mysql_fetch_array($query_result));
 	} else {
-		$query_result_main_array = false;
+		$geojson = false;
 	}
 	/* Конец данных */
-    return $query_result_main_array;
+    return $geojson;
 }
 
 
@@ -82,32 +106,43 @@ function my_sql_select($my_query, $my_db){
 /* Супер-защита от взлома =) */
 if (isset($_REQUEST["request"])) $global_request_name = htmlspecialchars(stripslashes(trim($_REQUEST["request"])));
 
+if (isset($_REQUEST["nwlng"])) $nwlng = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
+if (isset($_REQUEST["nwlat"])) $nwlat = htmlspecialchars(stripslashes(trim($_REQUEST["nwlat"])));
+if (isset($_REQUEST["selng"])) $selng = htmlspecialchars(stripslashes(trim($_REQUEST["selng"])));
+if (isset($_REQUEST["selat"])) $selat = htmlspecialchars(stripslashes(trim($_REQUEST["selat"])));
 
-
+$bounds = array(
+	'nw'  	=> array(
+		'lng'  => floatval($nwlng),
+   		'lat'  => floatval($nwlat)
+	),
+	'se'  	=> array(
+		'lng'  => floatval($selng),
+   		'lat'  => floatval($selat)
+	)
+);
 
 /* Запускаем процедуру в зависимости от запроса */
 switch ($global_request_name) {
 
 
-    case 'select_earnings':
+    case 'select_geojson':
 
 			/* Имя таблицы */
-			$TABLE = "TEMPLATE_DATA_1";
+			$TABLE = "TEMPLATE_DATA_2";
 
 			/* Формируем SQL SELECT запрос который вытаскивает все */
 			$select_query = "
-				SELECT ITEM AS name, SUM(QUANTITY * PRICE) AS y
+				SELECT *
 				FROM $DB_DATA.$TABLE
-				GROUP BY ITEM
-				ORDER BY y DESC";
+				ORDER BY ID";
 			/* Отправляем запрос и формируем трехуровневый массив с результатом */
-			$query_result = my_sql_select($select_query,$db);
+			$query_result = my_sql_select_to_geojson($select_query,$db);
 			if ($query_result != false){
 				$answer_from_server['result'] = true;
-				$answer_from_server['data'] = $query_result;
+				$answer_from_server['data']['geojson'] = $query_result;
+				$answer_from_server['data']['bounds'] = $bounds;
 			}
-
-
 		if (!isset($answer_from_server['data'])) {
 			$answer_from_server['result'] = false;
 			$answer_from_server['data'] = false;
@@ -120,13 +155,13 @@ switch ($global_request_name) {
 	default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
 		$answer_from_server['result'] = false;
-		$answer_from_server['info'] = 'Incorrect request name';			
+		$answer_from_server['info'] = 'Incorrect request name';
 		break;
 } /* Конец switch case */
 
 
 
-// print_r($answer_from_server['data']); echo '<br><br><br>'; 
+// print_r($answer_from_server['data']); echo '<br><br><br>';
 if (isset($global_request_name)){
 	/* Create a new instance of Services_JSON */
 	require_once('Services_JSON.php');

@@ -1,27 +1,6 @@
 /* 
 
 
-*/
-
-/*
-  Template Name : My Test Project
-  Template Version : 1.0
-  Template Author : Bolonin Nikolay ( As hackzilla )
-  Creation Date : 09 Nov 2016
-*/
-
-/*
-  Table of Contents : 
-      
-      25    --- Промис для XMLHttpRequest
-      67    --- Visualize Data (конструктор)
-      155   --- PAGE INITIALIZATION - INITIALIZATION
-      184   --- PAGE INITIALIZATION - FUNCTIONS
-
-*/
-
-
-
 window.onload = function() {
 
   'use strict';
@@ -257,6 +236,85 @@ window.onload = function() {
 
 
 
+*/
+
+/*
+  Template Name : My Test Project
+  Template Version : 1.0
+  Template Author : Bolonin Nikolay ( As hackzilla )
+  Creation Date : 09 Nov 2016
+*/
+
+/*
+  Table of Contents : 
+      
+      25    --- Промис для XMLHttpRequest
+      67    --- Visualize Data (конструктор)
+      155   --- PAGE INITIALIZATION - INITIALIZATION
+      184   --- PAGE INITIALIZATION - FUNCTIONS
+
+*/
+
+
+
+
+
+
+
+  'use strict';
+
+  // ========================================================================
+  // Промис для XMLHttpRequest
+  // ========================================================================
+  function ajaxGet(
+    // Дефолтные значения необязательных параметров
+    {
+      url:        url       ='ajax.php', 
+      request:    request   ='200', 
+      data:       data      =''
+    } = {}) {
+
+    return new Promise(function(resolve, reject) {
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url + '?r=' + Math.random() + '&request=' + request + data, true);
+
+      xhr.onload = function() {
+        if (this.status == 200) {
+          resolve(this.response);
+        } else {
+          var error = new Error(this.statusText);
+          error.code = this.status;
+          reject(error);
+        }
+      };
+
+      xhr.onerror = function() {
+        reject(new Error("Network Error"));
+      };
+
+      xhr.send();
+    });
+
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // ========================================================================
+  //  PAGE INITIALIZATION - INITIALIZATION
+  // ========================================================================
+
 
 
 
@@ -264,60 +322,6 @@ window.onload = function() {
 var jsonGeoData = {
   "type": "FeatureCollection",
   "features": [{
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "id": 1111,
-      "surface": "paved",
-      "width": 2.5,
-      "populousness": 3,
-      "quality": 4,
-      "rating": 3,
-      "color": "yellow",
-      "descendants": "1234, 1235, 4231"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35757690668106, 59.943845964069844],
-          [30.355632305145264, 59.943875]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "4",
-      "color": "yellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355326533317566, 59.943875],
-          [30.355299711227417, 59.943279052679095]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "4",
-      "color": "yellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35469889640808, 59.94328845650161],
-          [30.355299711227417, 59.943279052679095]
-        ]
-      ]
-    }
-  }, {
     "type": "Feature",
     "properties": {
       "name": "footway",
@@ -543,10 +547,22 @@ var jsonGeoData = {
 // Параметры начальной точки
 var lat = 59.94357081225065;
 var lng = 30.356389311114533;
-var zoom = 18;
+var zoom = 18;  
 
-// Создаем карту с API Google Maps
-function initAutocomplete() {
+
+
+  // ========================================================================
+  //  PAGE INITIALIZATION - FUNCTIONS
+  // ========================================================================
+
+
+
+
+
+
+
+// Создаем карту с API Google Maps (googleMapInit вызывается из HTML)
+function googleMapInit() {
   var googleMapLatLng = new google.maps.LatLng(lat, lng);
   var GoogleMap = new google.maps.Map(document.getElementById('map_with_google_api'), {
     center: googleMapLatLng,
@@ -665,6 +681,7 @@ function initAutocomplete() {
     lineOptions.innerHTML = '';
   });
 
+  /*
   // Клик по кнопке go_to_coords
   $(document).on('click keydown', '#meta_data_container', function(event) {
 
@@ -676,6 +693,65 @@ function initAutocomplete() {
 
     }
   });
+  */
+
+  var getDataButton = document.getElementById('meta_data_container');
+  // Клик по кнопке go_to_coords
+  getDataButton.addEventListener("click", function(event) {
+
+    var gBounds = GoogleMap.getBounds();
+    var bounds = {
+      nw: {
+        lng: gBounds.b.b,
+        lat: gBounds.f.b
+      },
+      se: {
+        lng: gBounds.b.f,
+        lat: gBounds.f.f
+      }
+    }
+
+    ajaxGet({
+      url: 'php/ajax.php',
+      request: 'select_geojson',
+      data: '&nwlng=' + bounds.nw.lng + '&nwlat=' + bounds.nw.lat + '&selng=' + bounds.se.lng + '&selat=' + bounds.se.lat
+    })
+      // 1. Распарсить JSON или вывести ошибку
+      .then(
+        response => {
+          console.info('Fulfilled');
+
+          let data = JSON.parse(response);
+          return data;
+        },
+        error => {
+          console.error('Rejected: ' + response);
+          return false;
+        }
+      )
+      // 2. Распарсить объект в массив + преобразовать строки Y в числа
+      .then(data => {
+
+        if (!!data['result']) {
+
+          console.log(data['data']);
+          // NOTE: This uses cross-domain XHR, and may not work on older browsers.
+          // Use loadGeoJson to load it from file or URL 
+          GoogleMap.data.addGeoJson(data['data']['geojson']);
+
+
+        } else {
+          console.error(data['info']);
+        }
+
+      });
+
+    event.preventDefault();
+
+  }, false); // Конец addEventListener
+
+
+
 
   // Функция применяющая стили по триггеру isColorful
   GoogleMap.data.setStyle(function(feature) {
@@ -687,8 +763,7 @@ function initAutocomplete() {
       zIndex = 2;
       strokeWeight = 5;
     }
-    // @type {google.maps.Data.StyleOptions}
-    return  ({
+    return /** @type {google.maps.Data.StyleOptions} */ ({
       fillColor: color,
       strokeColor: color,
       strokeWeight: strokeWeight,
@@ -810,3 +885,14 @@ function initAutocomplete() {
   });
 
 }
+
+
+
+
+
+
+
+
+
+
+
