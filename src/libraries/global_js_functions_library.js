@@ -1,248 +1,8 @@
-/* 
-
-
-window.onload = function() {
-
-  'use strict';
-
-  // ========================================================================
-  // Промис для XMLHttpRequest
-  // ========================================================================
-  function ajaxGet(options) {
-
-    // Дефолтные значения необязательных переменных
-    options         = options || {};
-    options.url     = (options.url == undefined) ? 'ajax.php' : options.url;
-    options.request = (options.request == undefined) ? '200' : options.request;
-
-    // Внутренние параметры
-    var url         = options.url,
-      request       = options.request;
-
-    return new Promise(function(resolve, reject) {
-
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', url + '?r=' + Math.random() + '&request=' + request, true);
-
-      xhr.onload = function() {
-        if (this.status == 200) {
-          resolve(this.response);
-        } else {
-          var error = new Error(this.statusText);
-          error.code = this.status;
-          reject(error);
-        }
-      };
-
-      xhr.onerror = function() {
-        reject(new Error("Network Error"));
-      };
-
-      xhr.send();
-    });
-
-  }
-
-
-
-
-
-  // ========================================================================
-  // Visualize Data (конструктор)
-  // ========================================================================
-  function visualizeData(options) {
-
-    // Дефолтные значения необязательных переменных
-    options           = options || {};
-    options.container = (options.container == undefined) ? 'chart_container' : options.container;
-    options.data      = (options.data == undefined) ? [{ name: 'Книга', y: 900, }] : options.data;
-
-    // Переменная для обращения внутренних методов к объекту
-    var self          = this;
-    // Внутренние свойства
-    this.container    = options.container;
-    this.data         = options.data;
-
-    // Внешний метод обновляющий контейнер
-    this.refreshData  = function(options) {
-
-      // Дефолтные значения необязательных переменных
-      options         = options || {};
-      options.data    = (options.data == undefined) ? self.data : options.data;
-
-      // Внутренние параметры
-      var data        = options.data,
-          container   = self.container;
-
-      Highcharts.chart(container, {
-          chart: {
-              type: 'column',
-              backgroundColor: "#FAFAFA"
-          },
-          title: {
-              text: 'Диаграмма распределения выручки от продажи различных товаров'
-          },
-          subtitle: {
-              text: 'До нажатия кнопки Обновить выводятся дефолтные данные. Ничего от себя добавлять не стал, даже стили. Если нужно было навести красоту или прикрутить более комплексные фичи Highcharts - напишите, до пятницы сделаю. Не стал делать намеренно чтобы выполнить исключительно условия задачи.'
-          },
-          xAxis: {
-              type: 'category'
-          },
-          yAxis: {
-              title: {
-                  text: 'Выручка в рублях'
-              }
-
-          },
-          legend: {
-              enabled: false
-          },
-          plotOptions: {
-              series: {
-                  borderWidth: 0,
-                  dataLabels: {
-                      enabled: true,
-                      format: '{point.y} руб.'
-                  }
-              }
-          },
-
-          tooltip: {
-              headerFormat: '<span style="font-size:11px">{series.name}</span><br>',
-              pointFormat: '<span style="color:{point.color}">{point.name}</span>: <b>{point.y:.2f} рублей</b><br/>'
-          },
-
-          series: [{
-            name: 'Выручка',
-            colorByPoint: true,
-            data: data
-        }]
-      }); // Конец Highcharts.chart
-
-    } // Конец this.refreshData
-
-  } // Конец visualizeData
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // ========================================================================
-  //  PAGE INITIALIZATION - INITIALIZATION
-  // ========================================================================
-
-  // Create chart instance
-  var Chart = new visualizeData({
-    container: 'chart_container',
-    data: [{
-              name: 'Книга',
-              y: 900,
-          }, {
-              name: 'Телефон',
-              y: 3500,
-          }, {
-              name: 'Кросовок',
-              y: 2000,
-          }, {
-              name: 'Ноутбук',
-              y: 25000,
-          }]
-  });
-
-  // Visualize data within created chart instance
-  Chart.refreshData();
-
-  mainUserInterfaceListenersInit(Chart);
-
-
-
-  // ========================================================================
-  //  PAGE INITIALIZATION - FUNCTIONS
-  // ========================================================================
-
-
-  // Обработчики основных элементов интерфейса страницы
-  function mainUserInterfaceListenersInit(Chart) {
-
-    var link = document.getElementById('refresh_chart');
-
-    link.addEventListener("click", function(event) {
-
-      ajaxGet({
-        url: 'php/ajax.php',
-        request: 'select_earnings'
-      })
-        // 1. Распарсить JSON или вывести ошибку
-        .then(
-          response => {
-            console.info('Fulfilled');
-
-            let data = JSON.parse(response);
-            return data;
-          },
-          error => {
-            console.error('Rejected: ' + response);
-            return false;
-          }
-        )
-        // 2. Распарсить объект в массив + преобразовать строки Y в числа
-        .then(data => {
-
-          if (!!data['result']) {
-
-            var arr = [];
-
-            for(var index in data['data']) {
-              data['data'][index]['y'] = +data['data'][index]['y'];
-              arr.push(data['data'][index]);
-
-            }
-            // Обновляем данные на созданном инстансе диаграммы
-            Chart.refreshData({
-              data: arr
-            });
-            console.log(arr);
-
-          } else {
-            console.error(data['info']);
-          }
-
-        });
-
-      event.preventDefault();
-
-    }, false); // Конец addEventListener
-
-  } // Конец mainUserInterfaceListenersInit
-
-}; // Конец window.onload
-
-
-
-
-
-
-
-
-
-
-
-
-*/
-
 /*
-  Template Name : My Test Project
+  Template Name : Quality of Roads
   Template Version : 1.0
   Template Author : Bolonin Nikolay ( As hackzilla )
-  Creation Date : 09 Nov 2016
+  Creation Date : 01 Dec 2016
 */
 
 /*
@@ -261,44 +21,42 @@ window.onload = function() {
 
 
 
-  'use strict';
+'use strict';
 
-  // ========================================================================
-  // Промис для XMLHttpRequest
-  // ========================================================================
-  function ajaxGet(
-    // Дефолтные значения необязательных параметров
-    {
-      url:        url       ='ajax.php', 
-      request:    request   ='200', 
-      data:       data      =''
-    } = {}) {
+// ========================================================================
+// Промис для XMLHttpRequest
+// ========================================================================
+function ajaxGet(
+  // Дефолтные значения необязательных параметров
+  {
+    url:        url       ='ajax.php', 
+    request:    request   ='200', 
+    data:       data      =''
+  } = {}) {
 
-    return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', url + '?r=' + Math.random() + '&request=' + request + data, true);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url + '?r=' + Math.random() + '&request=' + request + data, true);
 
-      xhr.onload = function() {
-        if (this.status == 200) {
-          resolve(this.response);
-        } else {
-          var error = new Error(this.statusText);
-          error.code = this.status;
-          reject(error);
-        }
-      };
+    xhr.onload = function() {
+      if (this.status == 200) {
+        resolve(this.response);
+      } else {
+        var error = new Error(this.statusText);
+        error.code = this.status;
+        reject(error);
+      }
+    };
 
-      xhr.onerror = function() {
-        reject(new Error("Network Error"));
-      };
+    xhr.onerror = function() {
+      reject(new Error("Network Error"));
+    };
 
-      xhr.send();
-    });
+    xhr.send();
+  });
 
-  }
-
-
+}
 
 
 
@@ -311,13 +69,11 @@ window.onload = function() {
 
 
 
-  // ========================================================================
-  //  PAGE INITIALIZATION - INITIALIZATION
-  // ========================================================================
 
 
-
-
+// ========================================================================
+//  PAGE INITIALIZATION - INITIALIZATION
+// ========================================================================
 
 var jsonGeoData = {
   "type": "FeatureCollection",
@@ -551,14 +307,9 @@ var zoom = 18;
 
 
 
-  // ========================================================================
-  //  PAGE INITIALIZATION - FUNCTIONS
-  // ========================================================================
-
-
-
-
-
+// ========================================================================
+//  PAGE INITIALIZATION - FUNCTIONS
+// ========================================================================
 
 
 // Создаем карту с API Google Maps (googleMapInit вызывается из HTML)
