@@ -15,7 +15,7 @@ mysql_set_charset('utf8',$db);
 /* Устанавливаем кодировку для корректного вывода в браузере */
 mysql_query("SET NAMES 'utf8';");
 mysql_query("SET CHARACTER SET 'utf8';");
-/* Устанавливаем кодировку для корректного collation*/
+/* Устанавливаем кодировку для корректного collation */
 mysql_query("SET SESSION collation_connection = 'utf8_general_ci';");
 
 if (!$db) {
@@ -40,30 +40,52 @@ $MY_TABLE_TYPE = "TABLE_TYPE = 'BASE TABLE'";
 
 <?php  /* Описание функций */
 
-/* Функция SELECT поискового запроса;
-	Если $index_type = ID, то массив индексируется по ID */
-function my_sql_select_into_highcharts_data($my_query, $my_db, $name, $y_value){
+/* Функция SELECT поискового запроса */
+function my_sql_select_to_geojson($my_query, $my_db){
     /* Вытаскиваем данные по запросу */
 	$query_result = mysql_query($my_query,$my_db);
 	if (mysql_num_rows($query_result) > 0){
-		$query_result_fetch_array = mysql_fetch_array($query_result);
-		$row_id = 0;
-		do{
-			$row_id++;
 
-			foreach ($query_result_fetch_array as $key => $value) {
-				if (!is_numeric($key)){
-					if ($key == $name) {$query_result_main_array[$row_id]["name"] = $value;}
-					if ($key == $y_value) {$query_result_main_array[$row_id]["y"] = $value;}
-				}
-			}
+		# Build GeoJSON feature collection array
+		$geojson = array(
+		   'type'      => 'FeatureCollection',
+		   'features'  => array()
+		);
+		# Loop through rows to build feature arrays
+		while($row = mysql_fetch_assoc($query_result)) {
+
+		    $feature = array(
+		        'id' => $row['ID'],
+		        'type' => 'Feature',
+		        'geometry' => array(
+		            'type' => 'MultiLineString',
+		            # Pass Longitude and Latitude Columns here
+		            'coordinates' => array(
+		            	array(
+		            		array(floatval($row['START_LNG']), floatval($row['START_LAT'])),
+		            		array(floatval($row['END_LNG']), floatval($row['END_LAT']))
+		            		)
+		            	)
+		        ),
+		        # Pass other attribute columns here
+		        'properties' => array(
+					"name" => $row['NAME'],
+					"surface" => $row['SURFACE'],
+					"width" => $row['WIDTH'],
+					"populousness" => $row['POPULOUSNESS'],
+					"quality" => $row['QUALITY'],
+					"rating" => $row['RATING'],
+					"color" => $row['COLOR']
+		            )
+		        );
+		    # Add feature arrays to feature collection array
+		    array_push($geojson['features'], $feature);
 		}
-		while($query_result_fetch_array = mysql_fetch_array($query_result));
 	} else {
-		$query_result_main_array = false;
+		$geojson = false;
 	}
 	/* Конец данных */
-    return $query_result_main_array;
+    return $geojson;
 }
 
 
@@ -86,49 +108,61 @@ if (isset($_REQUEST["request"])) $global_request_name = htmlspecialchars(stripsl
 
 
 
-
 /* Запускаем процедуру в зависимости от запроса */
 switch ($global_request_name) {
 
 
-    case 'select_earnings':
+    case 'select_geojson':
 
-			/* Имя таблицы */
-			$TABLE = "TEMPLATE_DATA_1";
+    	/* Обрабатываем входящие параметры */
+		if (isset($_REQUEST["nwlng"])) $nwlng = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
+		if (isset($_REQUEST["nwlat"])) $nwlat = htmlspecialchars(stripslashes(trim($_REQUEST["nwlat"])));
+		if (isset($_REQUEST["selng"])) $selng = htmlspecialchars(stripslashes(trim($_REQUEST["selng"])));
+		if (isset($_REQUEST["selat"])) $selat = htmlspecialchars(stripslashes(trim($_REQUEST["selat"])));
 
-			/* Формируем SQL SELECT запрос который вытаскивает все */
-			$select_query = "
-				SELECT ITEM AS Item, SUM(QUANTITY * PRICE) AS Earnings
-				FROM $DB_DATA.$TABLE
-				GROUP BY ITEM
-				ORDER BY Earnings DESC";
-			/* Отправляем запрос и формируем трехуровневый массив с результатом */
-			$query_result = my_sql_select_into_highcharts_data($select_query,$db,"Item","Earnings");
-			if ($query_result != false){
-				$answer_from_server['result'] = true;
-				$answer_from_server['data'] = $query_result;
-			}
+		$bounds = array(
+			'nw'  	=> array(
+				'lng'  => floatval($nwlng),
+		   		'lat'  => floatval($nwlat)
+			),
+			'se'  	=> array(
+				'lng'  => floatval($selng),
+		   		'lat'  => floatval($selat)
+			)
+		);
 
 
+		/* Имя таблицы */
+		$TABLE = "TEMPLATE_DATA_2";
+
+		/* Формируем SQL SELECT запрос который вытаскивает все */
+		$select_query = "
+			SELECT *
+			FROM $DB_DATA.$TABLE
+			ORDER BY ID";
+		/* Отправляем запрос и формируем трехуровневый массив с результатом */
+		$query_result = my_sql_select_to_geojson($select_query,$db);
+		if ($query_result != false){
+			$answer_from_server['result'] = true;
+			$answer_from_server['data']['geojson'] = $query_result;
+			$answer_from_server['data']['bounds'] = $bounds;
+		}
 		if (!isset($answer_from_server['data'])) {
 			$answer_from_server['result'] = false;
 			$answer_from_server['data'] = false;
 		}
         break;
 
-
-
-
 	default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
 		$answer_from_server['result'] = false;
-		$answer_from_server['info'] = 'Incorrect request name';			
+		$answer_from_server['info'] = 'Incorrect request name';
 		break;
 } /* Конец switch case */
 
 
 
-// print_r($answer_from_server['data']); echo '<br><br><br>'; 
+// print_r($answer_from_server['data']); echo '<br><br><br>';
 if (isset($global_request_name)){
 	/* Create a new instance of Services_JSON */
 	require_once('Services_JSON.php');

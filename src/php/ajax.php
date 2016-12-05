@@ -106,21 +106,7 @@ function my_sql_select_to_geojson($my_query, $my_db){
 /* Супер-защита от взлома =) */
 if (isset($_REQUEST["request"])) $global_request_name = htmlspecialchars(stripslashes(trim($_REQUEST["request"])));
 
-if (isset($_REQUEST["nwlng"])) $nwlng = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
-if (isset($_REQUEST["nwlat"])) $nwlat = htmlspecialchars(stripslashes(trim($_REQUEST["nwlat"])));
-if (isset($_REQUEST["selng"])) $selng = htmlspecialchars(stripslashes(trim($_REQUEST["selng"])));
-if (isset($_REQUEST["selat"])) $selat = htmlspecialchars(stripslashes(trim($_REQUEST["selat"])));
 
-$bounds = array(
-	'nw'  	=> array(
-		'lng'  => floatval($nwlng),
-   		'lat'  => floatval($nwlat)
-	),
-	'se'  	=> array(
-		'lng'  => floatval($selng),
-   		'lat'  => floatval($selat)
-	)
-);
 
 /* Запускаем процедуру в зависимости от запроса */
 switch ($global_request_name) {
@@ -128,29 +114,44 @@ switch ($global_request_name) {
 
     case 'select_geojson':
 
-			/* Имя таблицы */
-			$TABLE = "TEMPLATE_DATA_2";
+    	/* Обрабатываем входящие параметры */
+		if (isset($_REQUEST["nwlng"])) $nwlng = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
+		if (isset($_REQUEST["nwlat"])) $nwlat = htmlspecialchars(stripslashes(trim($_REQUEST["nwlat"])));
+		if (isset($_REQUEST["selng"])) $selng = htmlspecialchars(stripslashes(trim($_REQUEST["selng"])));
+		if (isset($_REQUEST["selat"])) $selat = htmlspecialchars(stripslashes(trim($_REQUEST["selat"])));
 
-			/* Формируем SQL SELECT запрос который вытаскивает все */
-			$select_query = "
-				SELECT *
-				FROM $DB_DATA.$TABLE
-				ORDER BY ID";
-			/* Отправляем запрос и формируем трехуровневый массив с результатом */
-			$query_result = my_sql_select_to_geojson($select_query,$db);
-			if ($query_result != false){
-				$answer_from_server['result'] = true;
-				$answer_from_server['data']['geojson'] = $query_result;
-				$answer_from_server['data']['bounds'] = $bounds;
-			}
+		$bounds = array(
+			'nw'  	=> array(
+				'lng'  => floatval($nwlng),
+		   		'lat'  => floatval($nwlat)
+			),
+			'se'  	=> array(
+				'lng'  => floatval($selng),
+		   		'lat'  => floatval($selat)
+			)
+		);
+
+
+		/* Имя таблицы */
+		$TABLE = "TEMPLATE_DATA_2";
+
+		/* Формируем SQL SELECT запрос который вытаскивает все */
+		$select_query = "
+			SELECT *
+			FROM $DB_DATA.$TABLE
+			ORDER BY ID";
+		/* Отправляем запрос и формируем трехуровневый массив с результатом */
+		$query_result = my_sql_select_to_geojson($select_query,$db);
+		if ($query_result != false){
+			$answer_from_server['result'] = true;
+			$answer_from_server['data']['geojson'] = $query_result;
+			$answer_from_server['data']['bounds'] = $bounds;
+		}
 		if (!isset($answer_from_server['data'])) {
 			$answer_from_server['result'] = false;
 			$answer_from_server['data'] = false;
 		}
         break;
-
-
-
 
 	default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
