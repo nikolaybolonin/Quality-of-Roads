@@ -488,7 +488,15 @@ function googleMapInit() {
           console.log(data['data']);
           // NOTE: This uses cross-domain XHR, and may not work on older browsers.
           // Use loadGeoJson to load it from file or URL 
-          GoogleMap.data.addGeoJson(data['data']['geojson']);
+          data['data']['geojson'].features.map(function(feature, index) {
+            if(!GoogleMap.data.contains(feature)){
+              GoogleMap.data.add(feature);
+            }
+            else console.log('feature' + index + 'already exist');
+
+          })
+
+
 
 
         } else {
