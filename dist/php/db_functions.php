@@ -50,6 +50,51 @@ function create_osm_tables($conn) {
         }
 }
 
+function add_node_2_osmnodes($connection, $lat, $lon) {
+    $sql_q = "SELECT id, latit, longit FROM OSMNodes WHERE latit=$lat AND longit=$lon";
+    $res = $connection->query($sql_q);
+    echo "<br>==result=<br>";
+    var_dump($res);
+    echo"<br>===sel result dump end===<br>";
+    if($res->num_rows <= 0) {
+        $sql_i = "INSERT INTO OSMNodes (latit, longit)
+            VALUES ($lat, $lon)";
+        if ($connection->query($sql_i) === TRUE) {
+            echo "New record created successfully";
+        } else {
+            echo "Error: " . $sql . "<br>" . $conn->error;
+        }
+    } else {
+        echo "exists already";
+    }
+    $res = $connection->query($sql_q);
+    $row = $res->fetch_assoc();
+    echo "<br>==node after ins=<br>";
+    echo "id: " . $row["id"]. " - latitude: ". $row["latit"]. " - longitude: " . $row["longit"]. "<br>";
+    echo"<br>==node after ins===<br>";
+    return $row["id"];
+}
+
+function add_2_osmlines($connection, $start_node_id, $end_node_id) {
+    $sql_lines_q = "SELECT id, start_node_id, end_node_id FROM OSMLines WHERE (start_node_id=$end_node_id AND end_node_id=$start_node_id) OR (start_node_id=$start_node_id AND end_node_id=$end_node_id)";
+    $res = $connection->query($sql_lines_q);
+    echo "<br>==result=<br>";
+    var_dump($res);
+    echo"<br>===sel result dump end===<br>";
+
+    if($res->num_rows <= 0) {
+        $sql_lines_i = "INSERT INTO OSMLines (start_node_id, end_node_id)
+                        VALUES ($start_node_id, $end_node_id)";
+        if ($connection->query($sql_lines_i) === TRUE) {
+            echo "New line record created successfully";
+        } else {
+            echo "Error: " . $sql . "<br>" . $conn->error;
+        }
+    } else {
+        echo "line exists already";
+    }
+}
+
 function upload_json($connection, $json){
     echo "<h2>parsing json</h2>";
     echo "=============<br>";
@@ -61,13 +106,9 @@ function upload_json($connection, $json){
         echo "<br>=============<br>";
         $geometry_json = $geoj_feature['geometry'];
         $coords_arr = $geometry_json['coordinates'];
-        //var_dump( $coords_arr);
-        //$t_coord = $coords_arr[0];
-                //var_dump( $t_coord);
         for ($i = 0; $i < count($coords_arr); ++$i) {
             $coord = $coords_arr[$i];
             echo "<br>==dropping coords=<br>";
-            //var_dump($coord);
             var_dump($coord);
             echo "<br>=============<br>";
 
@@ -76,95 +117,23 @@ function upload_json($connection, $json){
             echo "<br>==lat and long=<br>";
             echo $lat. " , ".$lon."<br>";
             echo "<br>=============<br>";
-
-            //$sql_q = "SELECT 'id', 'latit', 'longit' FROM 'OSMNodes' WHERE 'latit'='$lat' AND 'longit'='$lon'";
-            //$sql_q = "SELECT id, latit, longit FROM OSMNodes WHERE latit=$lat AND longit=$lon";
-            $sql_q = "SELECT id, latit, longit FROM OSMNodes WHERE latit=$lat AND longit=$lon";
-            $res = $connection->query($sql_q);
-            echo "<br>==result=<br>";
-            var_dump($res);
-            echo"<br>===sel result dump end===<br>";
-            //echo $res;
-            //echo "<br>LAT= ". $lat."<br>";
-            //var_dump($connection->query("SELECT id, latit, longit FROM OSMNodes WHERE latit=30.3553329"));
-
-
-            if($res->num_rows <= 0) {
-                
-                $sql_i = "INSERT INTO OSMNodes (latit, longit)
-                    VALUES ($lat, $lon)";
-                //echo $lat . $lon;
-                if ($connection->query($sql_i) === TRUE) {
-                    echo "New record created successfully";
-                } else {
-                    echo "Error: " . $sql . "<br>" . $conn->error;
-                }
-            } else {
-                echo "exists already";
-            }
-
-            $res = $connection->query($sql_q);
-            $row = $res->fetch_assoc();
-            echo "<br>==node after ins=<br>";
-            echo "id: " . $row["id"]. " - latitude: ". $row["latit"]. " - longitude: " . $row["longit"]. "<br>";
-            echo"<br>==node after ins===<br>";
-
-            $node_id = $row["id"];
-
-
-
-
-            // commenting a bunch of debug prints
-           /* 
-            if($res->num_rows > 0) {
-                while($row = $res->fetch_assoc()) {
-                    echo "id: " . $row["id"]. " - latitude: ". $row["latit"]. " - longitude: " . $row["longit"]. "<br>";
-                }
-            } else {
-                echo "0 results";
-            }
-            */
-
-            //$res = $connection->query("SHOW TABLES");
-            //var_dump($res);
+            $node_id = add_node_2_osmnodes($connection, $lat, $lon);
 
             if ($i>0) {
                 echo "<br>===========lines inc=================<br>";
                 $prev_coord = $coords_arr[$i-1];
                 $prev_lat = $prev_coord[0];
                 $prev_lon = $prev_coord[1];
-
-                $sql_q = "SELECT id, latit, longit FROM OSMNodes WHERE latit=$prev_lat AND longit=$prev_lon";
-                $res = $connection->query($sql_q);
-                $row = $res->fetch_assoc();
-                $prev_node_id = $row["id"];
+                $row = $res->fetch_assoc(); */
+                $prev_node_id = add_node_2_osmnodes($connection, $prev_lat, $prev_lon);
                 echo "<br>========prev node========<br>";
                 echo "pr " . $prev_lat . "_" . $prev_lon . "cur " . $lat . "_" . $lon."<br>";
                 echo $prev_node_id . " ==== " . $node_id;
                 echo "<br>=============================<br>";
 
-                $sql_lines_q = "SELECT id, start_node_id, end_node_id FROM OSMLines WHERE (start_node_id=$node_id AND end_node_id=$prev_node_id) OR (start_node_id=$prev_node_id AND end_node_id=$node_id)";
-            $res = $connection->query($sql_lines_q);
-            echo "<br>==result=<br>";
-            var_dump($res);
-            echo"<br>===sel result dump end===<br>";
-
-            if($res->num_rows <= 0) {
-                
-                $sql_lines_i = "INSERT INTO OSMLines (start_node_id, end_node_id)
-                    VALUES ($prev_node_id, $node_id)";
-                //echo $lat . $lon;
-                if ($connection->query($sql_lines_i) === TRUE) {
-                    echo "New line record created successfully";
-                } else {
-                    echo "Error: " . $sql . "<br>" . $conn->error;
-                }
-            } else {
-                echo "line exists already";
-            }
+                add_2_osmlines($connection, $node_id, $prev_node_id);
             }
         }
-        //var_dump($geoj_feature['id']);
     }
 }
 
@@ -179,6 +148,5 @@ function test_sql($connection) {
     } else {
         echo "0 results";
     }
-
 }
 ?>
