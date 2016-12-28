@@ -95,15 +95,15 @@ function create_tables($conn) {
     }
 }
 
-function add_node_2_osmnodes($connection, $lat, $lon) {
+function add_node_2_osmnodes($connection, $lat, $lon, $timestamp, $parent) {
     $sql_q = "SELECT id, latit, longit FROM Nodes WHERE latit=$lat AND longit=$lon";
     $res = $connection->query($sql_q);
     echo "<br>==result=<br>";
     var_dump($res);
     echo"<br>===sel result dump end===<br>";
     if($res->num_rows <= 0) {
-        $sql_i = "INSERT INTO Nodes (latit, longit)
-            VALUES ($lat, $lon)";
+        $sql_i = "INSERT INTO Nodes (latit, longit, osm_date, osm_parent)
+            VALUES ($lat, $lon, '$timestamp', '$parent')";
         if ($connection->query($sql_i) === TRUE) {
             echo "New record created successfully";
         } else {
@@ -120,7 +120,7 @@ function add_node_2_osmnodes($connection, $lat, $lon) {
     return $row["id"];
 }
 
-function add_2_osmlines($connection, $start_node_id, $end_node_id) {
+function add_2_osmlines($connection, $start_node_id, $end_node_id, $timestamp, $parent) {
     $sql_lines_q = "SELECT id, start_node_id, end_node_id FROM FLines WHERE (start_node_id=$end_node_id AND end_node_id=$start_node_id) OR (start_node_id=$start_node_id AND end_node_id=$end_node_id)";
     $res = $connection->query($sql_lines_q);
     echo "<br>==result=<br>";
@@ -128,8 +128,8 @@ function add_2_osmlines($connection, $start_node_id, $end_node_id) {
     echo"<br>===sel result dump end===<br>";
 
     if($res->num_rows <= 0) {
-        $sql_lines_i = "INSERT INTO FLines (start_node_id, end_node_id)
-                        VALUES ($start_node_id, $end_node_id)";
+        $sql_lines_i = "INSERT INTO FLines (start_node_id, end_node_id, osm_date, osm_parent)
+                        VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent')";
         if ($connection->query($sql_lines_i) === TRUE) {
             echo "New line record created successfully";
         } else {
@@ -145,8 +145,11 @@ function upload_json($connection, $json){
     echo "=============<br>";
     $json_data = json_decode($json, true);
     $json_timestamp_string = $json_data['timestamp'];
+    // if this works, need to remove some redundancy
+    $json_timestamp = date("Y-m-d H:i:s", strtotime($json_timestamp_string));
     echo "<br>=============<br>";
-    echo "timestamp = ". $json_timestamp_string;
+    echo "timestamp_string = ". $json_timestamp_string;
+    echo "<br>timestamp = ". $json_timestamp;
     echo "<br>=============<br>";
     $geoj_arr = $json_data['features'];
 
@@ -167,7 +170,7 @@ function upload_json($connection, $json){
             echo "<br>==lat and long=<br>";
             echo $lat. " , ".$lon."<br>";
             echo "<br>=============<br>";
-            $node_id = add_node_2_osmnodes($connection, $lat, $lon);
+            $node_id = add_node_2_osmnodes($connection, $lat, $lon, $json_timestamp, $feature_id);
 
             if ($i>0) { 
                 echo "<br>===========lines inc=================<br>";
@@ -175,13 +178,13 @@ function upload_json($connection, $json){
                 $prev_lat = $prev_coord[0];
                 $prev_lon = $prev_coord[1];
 //                $row = $res->fetch_assoc(); 
-                $prev_node_id = add_node_2_osmnodes($connection, $prev_lat, $prev_lon);
+                $prev_node_id = add_node_2_osmnodes($connection, $prev_lat, $prev_lon, $json_timestamp, $feature_id);
                 echo "<br>========prev node========<br>";
                 echo "pr " . $prev_lat . "_" . $prev_lon . "cur " . $lat . "_" . $lon."<br>";
                 echo $prev_node_id . " ==== " . $node_id;
                 echo "<br>=============================<br>";
 
-                add_2_osmlines($connection, $node_id, $prev_node_id);
+                add_2_osmlines($connection, $node_id, $prev_node_id, $json_timestamp, $feature_id);
             }
         }
     }
