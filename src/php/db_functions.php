@@ -15,7 +15,7 @@ function clear_db($connection) {
 function get_node_id_by_coords($connection, $node_coords) {
     $latitude = $node_coords[0];
     $longitude = $node_coords[1];
-    $sql_q = "SELECT id, latit, longit FROM Nodes WHERE latit=$latitude AND longit=$longitude";
+    $sql_q = "SELECT id, latitude, longitude FROM Nodes WHERE latitude=$latitude AND longitude=$longitude";
     $res = $connection->query($sql_q);
     if($res->num_rows <= 0) {
         return -1;
@@ -37,6 +37,35 @@ function get_line_id_by_nodes($connection, $start_node_id, $end_node_id) {
     }
 }
 
+function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) {
+    $latitude = $node_coords[0];
+    $longitude = $node_coords[1];
+
+    //TODO need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
+    $sql_i = "INSERT INTO Nodes (latitude, longitude, osm_date, osm_parent)
+                VALUES ($latitude, $longitude, '$timestamp', '$parent')";
+    /*$sql_i = "INSERT INTO Nodes (latitude, longitude)
+        VALUES ($latitude, $longitude)"; */
+    if ($connection->query($sql_i) === TRUE) {
+        echo "New record created successfully";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+
+}
+
+function add_line($connection, $start_node_id, $end_node_id, $timestamp = NULL, $parent = NULL) {
+    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, osm_date, osm_parent, pavement_type_id)
+                VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent', 1)";
+    //TODO same as weith nodes - need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
+    if ($connection->query($sql_i) === TRUE) {
+        echo "New line record created successfully";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+
+}
+
 function show_json($json) {
     echo "<h2>loading json</h2>";
     echo "===============echo===============<br>";
@@ -46,6 +75,24 @@ function show_json($json) {
     echo "<br>=============<br>";
 }
 
+function set_line_surface_quality($connection, $id, $new_surface_quality) {
+    $sql_u = "UPDATE flines SET surface_uqlity=$new_surface_quality WHERE id=$id";
+    if ($connection ->query($sql_u) === TRUE) {
+        echo "Record updated successfully";
+    } else {
+        echo "Error updating record: " . $conn->error;
+    }
+}
+
+function set_line_uncrowded($connection, $id, $new_uncrowded) {
+    $sql_u = "UPDATE flines SET surface_uqlity=$new_uncrowded WHERE id=$id";
+    if ($connection ->query($sql_u) === TRUE) {
+        echo "Record updated successfully";
+    } else {
+        echo "Error updating record: " . $conn->error;
+    }
+}
+
 function create_tables($conn) {
     echo "creating lines table";
     $sql = "CREATE TABLE FLines (
@@ -53,8 +100,9 @@ function create_tables($conn) {
         start_node_id INT(8) NOT NULL, 
         end_node_id INT(8) NOT NULL,
         modified_date TIMESTAMP,
-        quality INT(1),
-        pavemanet_type_id INT(2),
+        surface_quality INT(1),
+        uncrowded INT(1),
+        pavement_type_id INT(2),
         osm_parent VARCHAR(20),
         osm_date TIMESTAMP)";
 
@@ -68,8 +116,8 @@ function create_tables($conn) {
     echo "creating nodes table";
     $sql ="CREATE TABLE Nodes (
         id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        latit DOUBLE PRECISION(9, 7) NOT NULL,
-        longit DOUBLE PRECISION(10, 7) NOT NULL,
+        latitude DOUBLE PRECISION(9, 7) NOT NULL,
+        longitude DOUBLE PRECISION(10, 7) NOT NULL,
         modified_date TIMESTAMP,
         osm_parent VARCHAR(20),
         osm_date TIMESTAMP)";
@@ -93,51 +141,31 @@ function create_tables($conn) {
     } else {
         echo "error creating table: " . $conn->error;
     }
+    //and to insert default pavement type (TODO: make this in a normal way)
+    $sql_i = "INSERT INTO map_01.pavement (id, pavement_name, pavement_descr) VALUES (1, 'tiles', 'tiles description');";
+    if ($conn->query($sql_i) === TRUE) {
+        echo "<br>def. pavement inserted<br>";
+    } else {
+        echo "error creating table: " . $conn->error;
+    }
 }
 
-function add_node_2_osmnodes($connection, $lat, $lon, $timestamp, $parent) {
-    $sql_q = "SELECT id, latit, longit FROM Nodes WHERE latit=$lat AND longit=$lon";
-    $res = $connection->query($sql_q);
-    echo "<br>==result=<br>";
-    var_dump($res);
-    echo"<br>===sel result dump end===<br>";
-    if($res->num_rows <= 0) {
-        $sql_i = "INSERT INTO Nodes (latit, longit, osm_date, osm_parent)
-            VALUES ($lat, $lon, '$timestamp', '$parent')";
-        if ($connection->query($sql_i) === TRUE) {
-            echo "New record created successfully";
-        } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
-        }
-    } else {
-        echo "exists already";
+function find_or_add_node($connection, $node_coords, $timestamp, $parent) {
+    $node_id = get_node_id_by_coords($connection, $node_coords);
+    if ($node_id == -1) {
+        add_node($connection, $node_coords, $timestamp, $parent);
+        $node_id = get_node_id_by_coords($connection, $node_coords);
     }
-    $res = $connection->query($sql_q);
-    $row = $res->fetch_assoc();
-    echo "<br>==node after ins=<br>";
-    echo "id: " . $row["id"]. " - latitude: ". $row["latit"]. " - longitude: " . $row["longit"]. "<br>";
-    echo"<br>==node after ins===<br>";
-    return $row["id"];
+    return $node_id;
 }
 
-function add_2_osmlines($connection, $start_node_id, $end_node_id, $timestamp, $parent) {
-    $sql_lines_q = "SELECT id, start_node_id, end_node_id FROM FLines WHERE (start_node_id=$end_node_id AND end_node_id=$start_node_id) OR (start_node_id=$start_node_id AND end_node_id=$end_node_id)";
-    $res = $connection->query($sql_lines_q);
-    echo "<br>==result=<br>";
-    var_dump($res);
-    echo"<br>===sel result dump end===<br>";
-
-    if($res->num_rows <= 0) {
-        $sql_lines_i = "INSERT INTO FLines (start_node_id, end_node_id, osm_date, osm_parent)
-                        VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent')";
-        if ($connection->query($sql_lines_i) === TRUE) {
-            echo "New line record created successfully";
-        } else {
-            echo "Error: " . $sql . "<br>" . $conn->error;
-        }
-    } else {
-        echo "line exists already";
+function find_or_add_line($connection, $start_node_id, $end_node_id, $timestamp, $parent) {
+    $line_id = get_line_id_by_nodes($connection, $start_node_id, $end_node_id, $timestamp, $parent);
+    if ($line_id == -1) {
+        add_line($connection, $start_node_id, $end_node_id, $timestamp, $parent);
+        $line_id = get_line_id_by_nodes($connection, $start_node_id, $end_node_id, $timestamp, $parent);
     }
+    return $line_id;
 }
 
 function upload_json($connection, $json){
@@ -170,7 +198,7 @@ function upload_json($connection, $json){
             echo "<br>==lat and long=<br>";
             echo $lat. " , ".$lon."<br>";
             echo "<br>=============<br>";
-            $node_id = add_node_2_osmnodes($connection, $lat, $lon, $json_timestamp, $feature_id);
+            $node_id = find_or_add_node($connection, $coord, $json_timestamp, $feature_id);
 
             if ($i>0) { 
                 echo "<br>===========lines inc=================<br>";
@@ -178,25 +206,94 @@ function upload_json($connection, $json){
                 $prev_lat = $prev_coord[0];
                 $prev_lon = $prev_coord[1];
 //                $row = $res->fetch_assoc(); 
-                $prev_node_id = add_node_2_osmnodes($connection, $prev_lat, $prev_lon, $json_timestamp, $feature_id);
+                $prev_node_id = find_or_add_node($connection, $prev_coord, $json_timestamp, $feature_id);
                 echo "<br>========prev node========<br>";
                 echo "pr " . $prev_lat . "_" . $prev_lon . "cur " . $lat . "_" . $lon."<br>";
                 echo $prev_node_id . " ==== " . $node_id;
                 echo "<br>=============================<br>";
 
-                add_2_osmlines($connection, $node_id, $prev_node_id, $json_timestamp, $feature_id);
+                find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $feature_id);
             }
         }
     }
 }
 
+//TODO: Remove debug values
+function create_json($connection, $coords_one, $coords_two) {
+    $lat_one = $coords_one[0];
+    $lon_one = $coords_one[1];
+    $lat_two = $coords_two[0];
+    $lon_two = $coords_two[1];
+
+    if ($lat_one > $lat_two) {
+        $lat_max = $lat_one;
+        $lat_min = $lat_two;
+    } else {
+        $lat_max = $lat_two;
+        $lat_min = $lat_one;
+    }
+
+    if ($lon_one > $lon_two) {
+        $lon_max = $lon_one;
+        $lon_min = $lon_two;
+    } else {
+        $lon_max = $lon_two;
+        $lon_min = $lon_one;
+    }
+/*
+    $lat_max = 30.3556109;
+    $lat_min = 30.3556100;
+    $lon_max = 59.9440496;
+    $lon_min = 59.9440490;
+ */
+    $sql_q = "SELECT ln.id as line_id,
+                    ns.latitude as start_latitude,
+                    ns.longitude as start_longitude,
+                    ne.latitude as end_latitude,
+                    ne.longitude as end_longitude,
+                    ln.surface_quality as surface_quality,
+                    pavement.pavement_name as pavement_type
+                FROM nodes ns, nodes ne, flines ln
+                LEFT JOIN pavement
+                ON ln.pavement_type_id = pavement.id
+                WHERE (
+                    ln.start_node_id = ns.id AND
+                    ln.end_node_id = ne.id
+                    AND ((
+                        (ns.latitude < $lat_max AND
+                        ne.latitude > $lat_min
+                        ) OR (
+                        ns.latitude > $lat_min AND
+                        ne.latitude < $lat_max)
+                    ) OR (
+                        (ns.longitude < $lon_max AND
+                        ne.longitude > $lon_min
+                        ) OR (
+                        ns.longitude > $lon_min AND
+                        ne.longitude < $lon_max)))
+                    )";
+
+    $res = $connection->query($sql_q);
+    $rows = array();
+    if($res->num_rows > 0) {
+        while($row = $res->fetch_assoc()) {
+            echo "id: " . $row["line_id"]. "; start node: ". $row["start_node_id"]. "; end node: " . $row["end_node_id"]. "; pavement type: " . $row["pavement_type"] ."<br>";
+            $rows['liness'][] = $row;
+        }
+    } else {
+        echo "0 results";
+    }
+    echo "<br>===== rows aquired =====<br>";
+    print json_encode($rows);
+}
+
 function test_sql($connection) {
-    $sql_q = "SELECT id, latit, longit FROM nodes";
+    $sql_q = "SELECT id, latitude, longitude FROM nodes";
     $res = $connection->query($sql_q);
     
     if($res->num_rows > 0) {
         while($row = $res->fetch_assoc()) {
-            echo "id: " . $row["id"]. " - latitude: ". $row["latit"]. " - longitude: " . $row["longit"]. "<br>";
+            echo "id: " . $row["id"]. " - latitude: ". $row["latitude"]. " - longitude: " . $row["longitude"]. "<br>";
         }
     } else {
         echo "0 results";
