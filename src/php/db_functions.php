@@ -1,5 +1,9 @@
 <?php
 
+function add_to_log($log_name, $str_to_add) {
+    $myfile = file_put_contents($log_name, $str_to_add.PHP_EOL , FILE_APPEND | LOCK_EX);
+}
+
 function clear_db($connection) {
     $connection->query('SET foreign_key_checks = 0');
     if ($result = $connection->query("SHOW TABLES")) {
@@ -96,7 +100,7 @@ function set_line_uncrowded($connection, $id, $new_uncrowded) {
 function create_tables($conn) {
     echo "creating lines table";
     $sql = "CREATE TABLE FLines (
-        id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        line_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         start_node_id INT(8) NOT NULL, 
         end_node_id INT(8) NOT NULL,
         modified_date TIMESTAMP,
@@ -115,13 +119,12 @@ function create_tables($conn) {
 
     echo "creating nodes table";
     $sql ="CREATE TABLE Nodes (
-        id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        node_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         latitude DOUBLE PRECISION(9, 7) NOT NULL,
         longitude DOUBLE PRECISION(10, 7) NOT NULL,
         modified_date TIMESTAMP,
         osm_parent VARCHAR(20),
         osm_date TIMESTAMP)";
-
 
     if ($conn->query($sql) === TRUE) {
         echo "table Nodes created successfully";
@@ -131,16 +134,41 @@ function create_tables($conn) {
 
     echo "creating Pavement table";
     $sql ="CREATE TABLE Pavement (
-        id INT(2) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        pavement_name VARCHAR(30) NOT NULL,
-        pavement_descr VARCHAR(100))";
-
+        pavement_id INT(2) UNSIGNED AUTO_INCREMENT PRIMARY KEY)";
 
     if ($conn->query($sql) === TRUE) {
         echo "table Pavement created successfully";
     } else {
         echo "error creating table: " . $conn->error;
     }
+    
+    echo "creating Pavement translation table";
+    $sql ="CREATE TABLE Pavement_translation (
+        pavement_translation_id INT(5) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        pavement_id INT(2) UNSIGNED,
+        language_id INT(3) UNSIGNED
+        pavement_name VARCHAR(30) NOT NULL,
+        pavement_descr VARCHAR(100))";
+
+    if ($conn->query($sql) === TRUE) {
+        echo "table Pavement translation created successfully";
+    } else {
+        echo "error creating table: " . $conn->error;
+    }
+
+    echo "creating Languagestable";
+    $sql ="CREATE TABLE Languages (
+        language_id INT(5) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        language_en_name VARCHAR(30) NOT NULL,
+        language_en_short_name VARCHAR(5),
+        language_local_name VARCHAR(30))";
+
+    if ($conn->query($sql) === TRUE) {
+        echo "table Languages created successfully";
+    } else {
+        echo "error creating table: " . $conn->error;
+    }
+
     //and to insert default pavement type (TODO: make this in a normal way)
     $sql_i = "INSERT INTO map_01.pavement (id, pavement_name, pavement_descr) VALUES (1, 'tiles', 'tiles description');";
     if ($conn->query($sql_i) === TRUE) {
@@ -227,6 +255,7 @@ function upload_json($connection, $json){
 }
 
 function create_json($connection, $coords_one, $coords_two) {
+
     $lat_one = $coords_one[0];
     $lon_one = $coords_one[1];
     $lat_two = $coords_two[0];
@@ -253,7 +282,7 @@ function create_json($connection, $coords_one, $coords_two) {
     $lon_max = 59.9440496;
     $lon_min = 59.9440490;
  */
-    $sql_q = "SELECT ln.id as line_id,
+    $sql_q = "SELECT ln.line_id as line_id,
                     ns.latitude as start_latitude,
                     ns.longitude as start_longitude,
                     ne.latitude as end_latitude,
@@ -262,10 +291,10 @@ function create_json($connection, $coords_one, $coords_two) {
                     pavement.pavement_name as pavement_type
                 FROM nodes ns, nodes ne, flines ln
                 LEFT JOIN pavement
-                ON ln.pavement_type_id = pavement.id
+                ON ln.pavement_type_id = pavement.pavement_id
                 WHERE (
-                    ln.start_node_id = ns.id AND
-                    ln.end_node_id = ne.id
+                    ln.start_node_id = ns.node_id AND
+                    ln.end_node_id = ne.node_id
                     AND ((
                         (ns.latitude < $lat_max AND
                         ne.latitude > $lat_min
