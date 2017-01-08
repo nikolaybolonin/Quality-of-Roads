@@ -76,7 +76,7 @@ function show_json($json) {
 }
 
 function set_line_surface_quality($connection, $id, $new_surface_quality) {
-    $sql_u = "UPDATE flines SET surface_uqlity=$new_surface_quality WHERE id=$id";
+    $sql_u = "UPDATE flines SET surface_quality=$new_surface_quality WHERE id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -85,7 +85,7 @@ function set_line_surface_quality($connection, $id, $new_surface_quality) {
 }
 
 function set_line_uncrowded($connection, $id, $new_uncrowded) {
-    $sql_u = "UPDATE flines SET surface_uqlity=$new_uncrowded WHERE id=$id";
+    $sql_u = "UPDATE flines SET uncrowded = $new_uncrowded WHERE id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -148,6 +148,14 @@ function create_tables($conn) {
     } else {
         echo "error creating table: " . $conn->error;
     }
+/*
+    $conn2 = $conn;
+
+    set_line_uncrowded($conn2, 1, 8);
+    $conn2 = $conn;
+
+    set_line_surface_quality($conn2, 1, 7);
+ */
 }
 
 function find_or_add_node($connection, $node_coords, $timestamp, $parent) {
@@ -218,7 +226,6 @@ function upload_json($connection, $json){
     }
 }
 
-//TODO: Remove debug values
 function create_json($connection, $coords_one, $coords_two) {
     $lat_one = $coords_one[0];
     $lon_one = $coords_one[1];
