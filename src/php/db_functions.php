@@ -200,76 +200,6 @@ function create_tables($conn) {
     }
 }
 
-// Half-assed function to get some basic data in for future testing. TODO: get some proper basic data upload functionality)
-function upload_base_data($connection) {
-
-    echo "<br>== Inserting base data ==<br>";
-
-    echo "<br>pavement<br>";
-    $sql_i = "INSERT INTO map_01.pavement (pavement_id) VALUES (1), (2);";
-    if ($connection->query($sql_i) === TRUE) {
-        echo "<br>def. pavement ids inserted<br>";
-    } else {
-        echo "error creating table: " . $connection->error;
-    }
-
-    echo "<br>Languages<br>";
-    $sql_i = "INSERT INTO map_01.languages (language_en_short_name, language_en_name, language_local_name)
-                                    VALUES ('EN', 'English', 'English'),
-                                            ('RU', 'Russian', 'Русский');";
-    if ($connection->query($sql_i) === TRUE) {
-        echo "<br>languages inserted<br>";
-    } else {
-        echo "error creating table: " . $connection->error;
-    }
-
-    echo "<br>pavement translation<br>";
-    $sql_i = "INSERT INTO map_01.pavement_translation (pavement_id, language_id, pavement_name, pavement_descr)
-                                    VALUES (1, 1, 'asphalt', 'fairly smooth but can have cracks and may include gravel'),
-                                            (1, 2, 'асфальт', 'сравнительно ровная поверхность, возможны трещины и может включать в себя гравий'),
-                                            (2, 1, 'tiles', 'small beveled tiles, cracks are imminent, really uncomfortable for small wheels'),
-                                            (2, 2, 'плитка', 'мелкая неровная плитка, постоянные грани, дискофортно для маленький колес');";
-    if ($connection->query($sql_i) === TRUE) {
-        echo "<br>def. pavement translation inserted<br>";
-    } else {
-        echo "error creating table: " . $connection->error;
-    }
-
-    echo "<br>quality<br>";
-    $sql_i = "INSERT INTO map_01.quality (quality_value, quality_color_hex)
-                VALUES (0, '000000'),
-                        (1, 'ac1417'),
-                        (2, 'dc7519'),
-                        (3, 'cbc324'),
-                        (4, 'afeb20'),
-                        (5, '26b62b');";
-    if ($connection->query($sql_i) === TRUE) {
-        echo "<br>qualities inserted<br>";
-    } else {
-        echo "error creating table: " . $connection->error;
-    }
-
-    echo "<br>quality translation<br>";
-    $sql_i = "INSERT INTO map_01.quality_translation (quality_id, language_id, quality_descr)
-                VALUES (1, 1, 'impossible to ride'),
-                        (2, 1, 'possible to ride but really risky'),
-                        (3, 1, 'really uncomfortable'),
-                        (4, 1, 'uncomfortable'),
-                        (5, 1, 'good with minor irritation'),
-                        (6, 1, 'good'),
-                        (1, 1, 'ехать невозможно'),
-                        (2, 1, 'ехать можно, но рискованно'),
-                        (3, 1, 'ехать очень неприятно'),
-                        (4, 1, 'ехать неприятно'),
-                        (5, 1, 'хорошо, но с мелкими раздражающими факторами'),
-                        (6, 1, 'хорошо');";
-    if ($connection->query($sql_i) === TRUE) {
-        echo "<br>quality translations inserted<br>";
-    } else {
-        echo "error creating table: " . $connection->error;
-    }
-}
-
 function find_or_add_node($connection, $node_coords, $timestamp, $parent) {
     //echo "<br> == finding or adding node by ==<br>";
     $node_id = get_node_id_by_coords($connection, $node_coords);
@@ -339,6 +269,7 @@ function upload_json($connection, $json){
     }
 }
 
+//TODO: remove direct "footway" string. gotta move it through db
 function create_json($connection, $coords_one, $coords_two) {
 
     $lat_one = $coords_one[0];
@@ -401,13 +332,47 @@ function create_json($connection, $coords_one, $coords_two) {
     if($res->num_rows > 0) {
         while($row = $res->fetch_assoc()) {
             echo "id: " . $row["line_id"]. "; start node: ". $row["start_node_id"]. "; end node: " . $row["end_node_id"]. "; pavement type: " . $row["pavement_type"] ."<br>";
-            $rows['liness'][] = $row;
+            //$rows['liness'][] = $row;
+            /*
+            $properties = array($row["line_id"],  $row["pavement_type"], $row["surface_quality"]);
+            $geometry = array($row["start_latitude"], $row["start_longitude"], $row["end_latitude"], $row["end_longitude"]);
+            $rows['liness'][] = array($properties, $geometry);
+             */
+
+            //TODO: remove direct "footway" string. gotta move it through db
+            //TODO: add color through db
+            $properties = array("name"                  => "footway",
+                                "line_id"               => $row["line_id"],
+                                "pavement_type"         => $row["pavement_type"],
+                                "surface_quality"       => $row["surface_quality"]);
+            /*
+            $geometry = array("start_latitude"          => $row["start_latitude"],
+                              "start_longitude"         => $row["start_longitude"],
+                              "end_latitude"            => $row["end_latitude"],
+                              "end_longitude"           => $row["end_longitude"]);
+             */
+            $start_coordinates = array($row["start_latitude"], $row["start_longitude"]);
+            $end_coordinates =  array($row["end_latitude"], $row["end_longitude"]);
+
+            $geometry = array("type"            => "MultiLineString",
+                              "coordinates"     => array($start_coordinates, $end_coordinates));
+
+            //$rows['liness'][] = array($properties, $geometry);
+            /*
+            $rows['features'][] = array("type"        => "Feature",
+                                      "properties"  => $properties,
+                                      "geometry"    => $geometry); */
+
+            $rows[] = array("type"        => "Feature",
+                            "properties"  => $properties,
+                            "geometry"    => $geometry);
+
         }
     } else {
         echo "0 results";
     }
     echo "<br>===== rows aquired =====<br>";
-    print json_encode($rows);
+    print json_encode(array("type" => "FeatureCollection", "features" => $rows));
 }
 
 function test_sql($connection) {
