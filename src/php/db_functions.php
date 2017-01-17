@@ -17,27 +17,34 @@ function clear_db($connection) {
 
 //returns node id from db if such node exists. if it does not, -1 is returned
 function get_node_id_by_coords($connection, $node_coords) {
+    echo "<br>== getting node id by coords==";
+    var_dump($node_coords);
     $latitude = $node_coords[0];
     $longitude = $node_coords[1];
-    $sql_q = "SELECT id, latitude, longitude FROM Nodes WHERE latitude=$latitude AND longitude=$longitude";
+    $sql_q = "SELECT node_id, latitude, longitude FROM Nodes WHERE latitude=$latitude AND longitude=$longitude";
     $res = $connection->query($sql_q);
+    echo "===========and we get =================";
+    //echo $res;
+
     if($res->num_rows <= 0) {
+        echo "== and it's just another -1 ==<br>";
         return -1;
     } else {
         $row = $res->fetch_assoc();
-        return $row["id"];
+        echo " == and it's different!!!-! ==<br>";
+        return $row["node_id"];
     }
 }
 
 //returns line id from db if such line exists. if it does not, -1 is returned
 function get_line_id_by_nodes($connection, $start_node_id, $end_node_id) {
-    $sql_q = "SELECT id, start_node_id, end_node_id FROM FLines WHERE (start_node_id=$end_node_id AND end_node_id=$start_node_id) OR (start_node_id=$start_node_id AND end_node_id=$end_node_id)";
+    $sql_q = "SELECT line_id, start_node_id, end_node_id FROM FLines WHERE (start_node_id=$end_node_id AND end_node_id=$start_node_id) OR (start_node_id=$start_node_id AND end_node_id=$end_node_id)";
     $res = $connection->query($sql_q);
     if($res->num_rows <= 0) {
         return -1;
     } else {
         $row = $res->fetch_assoc();
-        return $row["id"];
+        return $row["line_id"];
     }
 }
 
@@ -51,7 +58,7 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
     /*$sql_i = "INSERT INTO Nodes (latitude, longitude)
         VALUES ($latitude, $longitude)"; */
     if ($connection->query($sql_i) === TRUE) {
-        echo "New record created successfully";
+        echo "New record for the node ". $latitude . " - " . $longitude . " was was created successfully";
     } else {
         echo "Error: " . $sql . "<br>" . $conn->error;
     }
@@ -78,7 +85,7 @@ function show_json($json) {
 }
 
 function set_line_surface_quality($connection, $id, $new_surface_quality) {
-    $sql_u = "UPDATE flines SET surface_quality=$new_surface_quality WHERE id=$id";
+    $sql_u = "UPDATE flines SET surface_quality=$new_surface_quality WHERE line_id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -87,7 +94,7 @@ function set_line_surface_quality($connection, $id, $new_surface_quality) {
 }
 
 function set_line_uncrowded($connection, $id, $new_uncrowded) {
-    $sql_u = "UPDATE flines SET uncrowded = $new_uncrowded WHERE id=$id";
+    $sql_u = "UPDATE flines SET uncrowded = $new_uncrowded WHERE line_id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -264,6 +271,7 @@ function upload_base_data($connection) {
 }
 
 function find_or_add_node($connection, $node_coords, $timestamp, $parent) {
+    //echo "<br> == finding or adding node by ==<br>";
     $node_id = get_node_id_by_coords($connection, $node_coords);
     if ($node_id == -1) {
         add_node($connection, $node_coords, $timestamp, $parent);
@@ -365,12 +373,14 @@ function create_json($connection, $coords_one, $coords_two) {
                     ne.latitude as end_latitude,
                     ne.longitude as end_longitude,
                     ln.surface_quality as surface_quality,
-                    pavement.pavement_name as pavement_type
+                    pavement_translation.pavement_name as pavement_type
+                    
                 FROM nodes ns, nodes ne, flines ln
-                LEFT JOIN pavement
-                ON ln.pavement_type_id = pavement.pavement_id
+                LEFT JOIN pavement_translation
+                ON ln.pavement_type_id = pavement_translation.pavement_id
                 WHERE (
                     ln.start_node_id = ns.node_id AND
+                    pavement_translation.language_id = 1 AND
                     ln.end_node_id = ne.node_id
                     AND ((
                         (ns.latitude < $lat_max AND
@@ -401,12 +411,12 @@ function create_json($connection, $coords_one, $coords_two) {
 }
 
 function test_sql($connection) {
-    $sql_q = "SELECT id, latitude, longitude FROM nodes";
+    $sql_q = "SELECT node_id, latitude, longitude FROM nodes";
     $res = $connection->query($sql_q);
     
     if($res->num_rows > 0) {
         while($row = $res->fetch_assoc()) {
-            echo "id: " . $row["id"]. " - latitude: ". $row["latitude"]. " - longitude: " . $row["longitude"]. "<br>";
+            echo "id: " . $row["node_id"]. " - latitude: ". $row["latitude"]. " - longitude: " . $row["longitude"]. "<br>";
         }
     } else {
         echo "0 results";
