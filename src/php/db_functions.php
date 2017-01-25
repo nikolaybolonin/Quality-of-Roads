@@ -1,4 +1,8 @@
+
 <?php
+//<?php ini_set(“memory_limit”,”256M“); 
+
+ini_set('max_execution_time', 600); 
 
 function add_to_log($log_name, $str_to_add) {
     $myfile = file_put_contents($log_name, $str_to_add.PHP_EOL , FILE_APPEND | LOCK_EX);
@@ -21,7 +25,7 @@ function get_node_id_by_coords($connection, $node_coords) {
     var_dump($node_coords);
     $latitude = $node_coords[0];
     $longitude = $node_coords[1];
-    $sql_q = "SELECT node_id, latitude, longitude FROM Nodes WHERE latitude=$latitude AND longitude=$longitude";
+    $sql_q = "SELECT node_id FROM Nodes WHERE latitude=$latitude AND longitude=$longitude";
     $res = $connection->query($sql_q);
     echo "===========and we get =================";
     //echo $res;
@@ -32,6 +36,24 @@ function get_node_id_by_coords($connection, $node_coords) {
     } else {
         $row = $res->fetch_assoc();
         echo " == and it's different!!!-! ==<br>";
+        return $row["node_id"];
+    }
+}
+
+function get_node_id_by_osm_parent($connection, $osm_parent) {
+    echo "<br>== getting node id by osm parent==<br>";
+    var_dump($node_coords);
+    $sql_q = "SELECT node_id FROM Nodes WHERE node_osm_parent=$osm_parent";
+    $res = $connection->query($sql_q);
+    echo "===========and we get =================";
+    echo "<br>osm_parent = ". $osm_parent . "<br>";
+
+    if($res->num_rows <= 0) {
+        echo "== and it's just another -1 ==<br>";
+        return -1;
+    } else {
+        $row = $res->fetch_assoc();
+        echo "<br>line id = ". $row["node_id"] . "<br>";
         return $row["node_id"];
     }
 }
@@ -53,7 +75,8 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
     $longitude = $node_coords[1];
 
     //TODO need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
-    $sql_i = "INSERT INTO Nodes (latitude, longitude, osm_date, osm_parent)
+    echo "lat = " . $latitude . "; lon = " . $longitude . "; time = " . $timestamp . "; parent = " . $parent . "<br>";
+    $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
                 VALUES ($latitude, $longitude, '$timestamp', '$parent')";
     /*$sql_i = "INSERT INTO Nodes (latitude, longitude)
         VALUES ($latitude, $longitude)"; */
@@ -65,7 +88,7 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
 }
 
 function add_line($connection, $start_node_id, $end_node_id, $timestamp = NULL, $parent = NULL) {
-    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, osm_date, osm_parent, pavement_type_id)
+    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent, pavement_type_id)
                 VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent', 1)";
     //TODO same as weith nodes - need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
     if ($connection->query($sql_i) === TRUE) {
@@ -112,8 +135,8 @@ function create_tables($conn) {
         surface_quality INT(1),
         uncrowded INT(1),
         pavement_type_id INT(2),
-        osm_parent VARCHAR(20),
-        osm_date TIMESTAMP)";
+        line_osm_parent VARCHAR(20),
+        line_osm_date TIMESTAMP)";
 
     if ($conn->query($sql) === TRUE) {
         echo "table Lines created successfully";
@@ -128,8 +151,8 @@ function create_tables($conn) {
         latitude DOUBLE PRECISION(9, 7) NOT NULL,
         longitude DOUBLE PRECISION(10, 7) NOT NULL,
         modified_date TIMESTAMP,
-        osm_parent VARCHAR(20),
-        osm_date TIMESTAMP)";
+        node_osm_parent VARCHAR(20),
+        node_osm_date TIMESTAMP)";
 
     if ($conn->query($sql) === TRUE) {
         echo "table Nodes created successfully";
@@ -219,7 +242,7 @@ function find_or_add_line($connection, $start_node_id, $end_node_id, $timestamp,
     return $line_id;
 }
 
-function upload_json($connection, $json){
+function upload_geojson($connection, $json){
     echo "<h2>parsing json</h2>";
     echo "=============<br>";
     $json_data = json_decode($json, true);
@@ -267,6 +290,112 @@ function upload_json($connection, $json){
             }
         }
     }
+}
+
+function upload_geodata($connection, $json){
+    echo "<br>uploading some serious data<br>";
+    //echo "<h2>parsing json</h2>";
+    //echo "=============<br>";
+    $json_data = json_decode($json, true);
+    $json_osm3s = $json_data['osm3s'];
+    $json_timestamp_string = $json_osm3s['timestamp_osm_base'];
+    // if this works, need to remove some redundancy
+    $json_timestamp = date("Y-m-d H:i:s", strtotime($json_timestamp_string));
+    //echo "<br>=============<br>";
+    //echo "timestamp_string = ". $json_timestamp_string;
+    //echo "<br>timestamp = ". $json_timestamp;
+    //echo "<br>=============<br>";
+    $geoj_arr = $json_data['elements'];
+
+    //to start with adding nodes to db
+
+    //$this->db->trans_start();
+
+     $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
+                VALUES ";
+    foreach ($geoj_arr as $geoj_element) {
+        $element_type = $geoj_element['type'];
+        if ($element_type == "node") {
+
+            $element_id = $geoj_element['id'];
+            //echo "feature_id = ". $geoj_element['id'];
+            //echo "<br>=============<br>";
+           
+            $lat = $geoj_element['lat'];
+            $lon = $geoj_element['lon'];
+            //echo "<br>==lat and long=<br>";
+            //echo $lat. " , ".$lon."<br>";
+            //echo "<br>=============<br>";
+            //$coord = array($lat, $lon);
+            //$node_id = find_or_add_node($connection, $coord, $json_timestamp, $element_id);
+
+            $sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
+            $q_len = strlen($sql_i);
+            if ($q_len > 10000) {
+                //echo "<br>adding nodes<br>";
+                $sql_i .= "(60.6, 30.3, '$json_timestamp', '777')";
+                //echo $sql_i;
+                if ($connection->query($sql_i) === TRUE) {
+                    //echo "nodes inserted";
+                } else {
+                    echo "Error: " . $sql . "<br>" . $conn->error;
+                }
+                $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
+                            VALUES ";
+            }
+        }
+    }
+
+    /*
+    echo "<br>adding nodes<br>";
+    $sql_i .= "(60.6, 30.3, '$json_timestamp', '777'), ";
+    echo $sql_i;
+    if ($connection->query($sql_i) === TRUE) {
+        echo "nodes inserted";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+    */
+    echo "<br>nodes are done<br>";
+    //now onto lines
+    foreach ($geoj_arr as $geoj_element) {
+
+        //$sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
+        //echo "<br>1<br>";
+        $element_type = $geoj_element['type'];
+        if ($element_type == "way") {
+            //echo "<br>2<br>";
+
+            $element_id = $geoj_element['id'];
+            //echo "feature_id = ". $geoj_element['id'];
+            //echo "<br>=============<br>";
+            $nodes_arr = $geoj_element['nodes'];
+            var_dump($nodes_arr);
+            echo "<br>";
+            for ($i = 0; $i < count($nodes_arr); ++$i) {
+                //echo "<br>3<br>";
+                $node_osm_id = $nodes_arr[$i];
+                //echo "<br>==dropping coords=<br>";
+                //var_dump($node_osm_id);
+                //echo "<br>=============<br>";
+
+                $node_id = get_node_id_by_osm_parent($connection, $node_osm_id);
+
+                if ($i>0) { 
+                    echo "<br>===========lines inc=================<br>";
+                    $prev_node_osm_id = $nodes_arr[$i-1];
+
+                    $prev_node_id = get_node_id_by_osm_parent($connection, $prev_node_osm_id);
+
+
+                find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
+                }
+            }
+        }
+    
+    }
+    echo "<br>= and lines are done =<br>";
+    //$this->db->trans_complete();
 }
 
 //TODO: remove direct "footway" string. gotta move it through db
@@ -388,3 +517,4 @@ function test_sql($connection) {
     }
 }
 ?>
+
