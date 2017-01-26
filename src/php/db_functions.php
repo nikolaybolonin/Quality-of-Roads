@@ -8,6 +8,16 @@ function add_to_log($log_name, $str_to_add) {
     $myfile = file_put_contents($log_name, $str_to_add.PHP_EOL , FILE_APPEND | LOCK_EX);
 }
 
+function generate_random_string ($str_length) {
+    $rand_char_list = "1234567890qwertyuiopasdfghjklzxcvbnm";
+    $rand_char_num = strlen($rand_char_list);
+    $rand_string = '';
+    for ($i = 0; $i < $str_length; $i++) {
+        $rand_string .= $rand_char_list[rand(0, $rand_char_num - 1)];
+    }
+    return $rand_string;
+}
+
 function clear_db($connection) {
     $connection->query('SET foreign_key_checks = 0');
     if ($result = $connection->query("SHOW TABLES")) {
@@ -83,7 +93,7 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
     if ($connection->query($sql_i) === TRUE) {
         echo "New record for the node ". $latitude . " - " . $longitude . " was was created successfully";
     } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+        echo "Error: " . $sql . "<br>" . $connection->error;
     }
 }
 
@@ -94,7 +104,7 @@ function add_line($connection, $start_node_id, $end_node_id, $timestamp = NULL, 
     if ($connection->query($sql_i) === TRUE) {
         echo "New line record created successfully";
     } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+        echo "Error: " . $sql . "<br>" . $connection->error;
     }
 }
 
@@ -112,7 +122,7 @@ function set_line_surface_quality($connection, $id, $new_surface_quality) {
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
-        echo "Error updating record: " . $conn->error;
+        echo "Error updating record: " . $connection->error;
     }
 }
 
@@ -121,7 +131,7 @@ function set_line_uncrowded($connection, $id, $new_uncrowded) {
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
-        echo "Error updating record: " . $conn->error;
+        echo "Error updating record: " . $connection->error;
     }
 }
 
@@ -311,10 +321,51 @@ function upload_geodata($connection, $json){
 
     //$this->db->trans_start();
 
-     $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
+     //next part is for adding a test node to get its id and follow it with mass nodes so that new ids can be projected
+    $rand_osm_parent = generate_random_string(18);
+    $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
+        VALUES (60.6, 30.3, '$json_timestamp', '$rand_osm_parent')";
+
+    echo "<br>";
+    echo $sql_i;
+    echo "<br>";
+    if ($connection->query($sql_i) === TRUE) {
+        echo "test node inserted";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+    }
+
+    $sql_q = "SELECT node_id FROM Nodes WHERE node_osm_parent='$rand_osm_parent'";
+    $res = $connection->query($sql_q);
+
+    if($res->num_rows <= 0) {
+        echo "== failed inserting test node, apparentrly ==<br>";
+    } else {
+        $row = $res->fetch_assoc();
+        echo "<br>line id = ". $row["node_id"] . "<br>";
+        $last_node_id = $row["node_id"];
+    }
+
+    $node_counter = $last_node_id + 1;
+    $node_ids_for_osm_parents = array();
+
+
+    echo "<br>======test=====arrr=====";
+    $test_arr = array();
+    //$test_arr[] = array("711" => "11");
+    //$test_arr[] = array("722" => "22");
+    $test_arr[711] = 11;
+    echo "<br>=";
+    echo $test_arr["711"];
+    echo "<br>";
+
+
+    $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
                 VALUES ";
     foreach ($geoj_arr as $geoj_element) {
         $element_type = $geoj_element['type'];
+       
+
         if ($element_type == "node") {
 
             $element_id = $geoj_element['id'];
@@ -329,6 +380,18 @@ function upload_geodata($connection, $json){
             //$coord = array($lat, $lon);
             //$node_id = find_or_add_node($connection, $coord, $json_timestamp, $element_id);
 
+
+
+            //computing id projections
+/*
+            echo "<br>";
+            echo $element_id;
+            echo "<br>";
+*/
+    //$node_ids_for_osm_parents[] = array($element_id => $node_counter);
+            $node_ids_for_osm_parents[(string)$element_id] = $node_counter;
+            $node_counter += 1;
+
             $sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
             $q_len = strlen($sql_i);
             if ($q_len > 10000) {
@@ -338,7 +401,7 @@ function upload_geodata($connection, $json){
                 if ($connection->query($sql_i) === TRUE) {
                     //echo "nodes inserted";
                 } else {
-                    echo "Error: " . $sql . "<br>" . $conn->error;
+                    echo "Error: " . $sql . "<br>" . $connection->error;
                 }
                 $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
                             VALUES ";
@@ -353,16 +416,27 @@ function upload_geodata($connection, $json){
     if ($connection->query($sql_i) === TRUE) {
         echo "nodes inserted";
     } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+        echo "Error: " . $sql . "<br>" . $connection->error;
     }
-    */
+     */
+    echo "<br>====3560643324.====";
+    echo $node_ids_for_osm_parents['3560643324'];
+    echo "<br>====-7...====";
+    echo $node_ids_for_osm_parents['-734323972'];
+    echo "<br>";
+    var_dump($node_ids_for_osm_parents);
+    echo "<br>";
     echo "<br>nodes are done<br>";
     //now onto lines
+    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+                VALUES ";
     foreach ($geoj_arr as $geoj_element) {
 
         //$sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
         //echo "<br>1<br>";
         $element_type = $geoj_element['type'];
+        /*$sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+            VALUES "; */
         if ($element_type == "way") {
             //echo "<br>2<br>";
 
@@ -379,16 +453,34 @@ function upload_geodata($connection, $json){
                 //var_dump($node_osm_id);
                 //echo "<br>=============<br>";
 
-                $node_id = get_node_id_by_osm_parent($connection, $node_osm_id);
+                //$node_id = get_node_id_by_osm_parent($connection, $node_osm_id);
+                $node_id = $node_ids_for_osm_parents[$node_osm_id];
 
                 if ($i>0) { 
-                    echo "<br>===========lines inc=================<br>";
+                    //echo "<br>===========lines inc=================<br>";
                     $prev_node_osm_id = $nodes_arr[$i-1];
 
-                    $prev_node_id = get_node_id_by_osm_parent($connection, $prev_node_osm_id);
+                    //$prev_node_id = get_node_id_by_osm_parent($connection, $prev_node_osm_id);
+                    $prev_node_id = $node_ids_for_osm_parents[$prev_node_id];
 
 
-                find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
+                    //find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
+
+                    $sql_i .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
+                    $q_len = strlen($sql_i);
+                    if ($q_len > 10000) {
+                        //echo "<br>adding nodes<br>";
+                        //TODO: remove last element instead. (same with nodes)
+                        $sql_i .= "(-1, -1, '$json_timestamp', '777')";
+                        //echo $sql_i;
+                        if ($connection->query($sql_i) === TRUE) {
+                            //echo "nodes inserted";
+                        } else {
+                            echo "Error: " . $sql . "<br>" . $connection->error;
+                        }
+                        $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+                                    VALUES ";
+                    }
                 }
             }
         }
