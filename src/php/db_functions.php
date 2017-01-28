@@ -327,7 +327,7 @@ function upload_geodata($connection, $json){
         VALUES (60.6, 30.3, '$json_timestamp', '$rand_osm_parent')";
 
     echo "<br>";
-    echo $sql_i;
+    //echo $sql_i;
     echo "<br>";
     if ($connection->query($sql_i) === TRUE) {
         echo "test node inserted";
@@ -396,11 +396,15 @@ function upload_geodata($connection, $json){
             $q_len = strlen($sql_i);
             if ($q_len > 10000) {
                 //echo "<br>adding nodes<br>";
-                $sql_i .= "(60.6, 30.3, '$json_timestamp', '777')";
-                //echo $sql_i;
+                //$sql_i .= "(60.6, 30.3, '$json_timestamp', '777')";
+            //echo $sql_i;
+                $sql_i = rtrim($sql_i, ", ");
                 if ($connection->query($sql_i) === TRUE) {
                     //echo "nodes inserted";
                 } else {
+                    echo "<br>";
+                    //echo $sql_i;
+                    echo "<br>";
                     echo "Error: " . $sql . "<br>" . $connection->error;
                 }
                 $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
@@ -408,6 +412,12 @@ function upload_geodata($connection, $json){
             }
         }
     }
+     $sql_i = rtrim($sql_i, ", ");
+                if ($connection->query($sql_i) === TRUE) {
+                    //echo "nodes inserted";
+                } else {
+                    echo "Error: " . $sql . "<br>" . $connection->error;
+                }
 
     /*
     echo "<br>adding nodes<br>";
@@ -448,7 +458,7 @@ function upload_geodata($connection, $json){
             echo "<br>";
             for ($i = 0; $i < count($nodes_arr); ++$i) {
                 //echo "<br>3<br>";
-                $node_osm_id = $nodes_arr[$i];
+                $node_osm_id = (string)$nodes_arr[$i];
                 //echo "<br>==dropping coords=<br>";
                 //var_dump($node_osm_id);
                 //echo "<br>=============<br>";
@@ -458,26 +468,31 @@ function upload_geodata($connection, $json){
 
                 if ($i>0) { 
                     //echo "<br>===========lines inc=================<br>";
-                    $prev_node_osm_id = $nodes_arr[$i-1];
+                    $prev_node_osm_id = (string)$nodes_arr[$i-1];
 
                     //$prev_node_id = get_node_id_by_osm_parent($connection, $prev_node_osm_id);
-                    $prev_node_id = $node_ids_for_osm_parents[$prev_node_id];
+                    $prev_node_id = $node_ids_for_osm_parents[$prev_node_osm_id];
 
 
                     //find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
 
                     $sql_i .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
                     $q_len = strlen($sql_i);
-                    if ($q_len > 10000) {
+                    if ($q_len > 1000) {
                         //echo "<br>adding nodes<br>";
                         //TODO: remove last element instead. (same with nodes)
-                        $sql_i .= "(-1, -1, '$json_timestamp', '777')";
+                        //$sql_i .= "(-1, -1, '$json_timestamp', '777')";
+                        $sql_i = rtrim($sql_i, ", ");
                         //echo $sql_i;
                         if ($connection->query($sql_i) === TRUE) {
-                            //echo "nodes inserted";
+                            echo "lines inserted";
                         } else {
                             echo "Error: " . $sql . "<br>" . $connection->error;
+                            echo "<br>";
+                            echo $sql_i;
+                            echo "<br>";
                         }
+
                         $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
                                     VALUES ";
                     }
@@ -596,7 +611,15 @@ function create_json($connection, $coords_one, $coords_two) {
     print json_encode(array("type" => "FeatureCollection", "features" => $rows));
 }
 
-function test_sql($connection) {
+function test($connection) {
+    $string = "asdfb,";
+    echo "<br>";
+    echo $string;
+    echo "<br>";
+    echo  rtrim($string, ",");
+    echo "<br>";
+
+
     $sql_q = "SELECT node_id, latitude, longitude FROM nodes";
     $res = $connection->query($sql_q);
     
