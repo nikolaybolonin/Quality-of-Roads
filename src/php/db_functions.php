@@ -1,6 +1,6 @@
 
 <?php
-//<?php ini_set(“memory_limit”,”256M“); 
+//<?php ini_set(ï¿½memory_limitï¿½,ï¿½256Mï¿½); 
 
 ini_set('max_execution_time', 600); 
 
@@ -16,6 +16,24 @@ function generate_random_string ($str_length) {
         $rand_string .= $rand_char_list[rand(0, $rand_char_num - 1)];
     }
     return $rand_string;
+}
+
+//gets an array of two nodes, returns those sorted
+function sort_nodes($nodes) {
+    $node1 = $nodes[0];
+    $node2 = $nodes[1];
+    if ($node1[0] < $node2[0]) {
+        return $nodes;
+    }
+    elseif ($node1[0] > $node2[0]) {
+        return array($node2, $node1);
+    }
+    elseif ($node1[1] < $node2[1]) {
+        return $nodes;
+    }
+    else {
+        return array($node2, $node1);
+    }
 }
 
 function clear_db($connection) {
@@ -98,8 +116,11 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
 }
 
 function add_line($connection, $start_node_id, $end_node_id, $timestamp = NULL, $parent = NULL) {
-    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent, pavement_type_id)
-                VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent', 1)";
+    $sorted_nodes = sort_nodes(array($start_node_id, $end_node_id));
+    $start_node_id = $sorted_nodes[0];
+    $end_node_id = $sorted_nodes[1];
+    $sql_i = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
+                VALUES ($start_node_id, $end_node_id, '$timestamp', '$parent')";
     //TODO same as weith nodes - need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
     if ($connection->query($sql_i) === TRUE) {
         echo "New line record created successfully";
@@ -117,8 +138,8 @@ function show_json($json) {
     echo "<br>=============<br>";
 }
 
-function set_line_surface_quality($connection, $id, $new_surface_quality) {
-    $sql_u = "UPDATE flines SET surface_quality=$new_surface_quality WHERE line_id=$id";
+function set_qpart_surface_quality($connection, $id, $new_surface_quality) {
+    $sql_u = "UPDATE qparts SET surface_quality=$new_surface_quality WHERE qpart_id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -127,7 +148,7 @@ function set_line_surface_quality($connection, $id, $new_surface_quality) {
 }
 
 function set_line_uncrowded($connection, $id, $new_uncrowded) {
-    $sql_u = "UPDATE flines SET uncrowded = $new_uncrowded WHERE line_id=$id";
+    $sql_u = "UPDATE baselines SET uncrowded = $new_uncrowded WHERE line_id=$id";
     if ($connection ->query($sql_u) === TRUE) {
         echo "Record updated successfully";
     } else {
@@ -136,17 +157,32 @@ function set_line_uncrowded($connection, $id, $new_uncrowded) {
 }
 
 function create_tables($conn) {
-    echo "creating lines table";
-    $sql = "CREATE TABLE FLines (
-        line_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        start_node_id INT(8) NOT NULL, 
-        end_node_id INT(8) NOT NULL,
+    echo "creating base lines table";
+    $sql = "CREATE TABLE BaseLines (
+        bline_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        bline_start_node_id INT(8) NOT NULL, 
+        bline_end_node_id INT(8) NOT NULL,
         modified_date TIMESTAMP,
-        surface_quality INT(1),
         uncrowded INT(1),
-        pavement_type_id INT(2),
         line_osm_parent VARCHAR(20),
         line_osm_date TIMESTAMP)";
+
+    if ($conn->query($sql) === TRUE) {
+        echo "table Lines created successfully";
+    } else {
+        echo "error creating table: " . $conn->error;
+    }
+    echo "<br>";
+
+    echo "creating quality lines table";
+    $sql = "CREATE TABLE QLines (
+        qpart_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        parent_line_id INT(8) NOT NULL, 
+        length INT(8) NOT NULL,
+        qline_start_node_id INT(8) NOT NULL, 
+        qline_end_node_id INT(8) NOT NULL,
+        surface_quality INT(1),
+        pavement_type_id INT(2))";
 
     if ($conn->query($sql) === TRUE) {
         echo "table Lines created successfully";
@@ -252,6 +288,7 @@ function find_or_add_line($connection, $start_node_id, $end_node_id, $timestamp,
     return $line_id;
 }
 
+//that's for a small json that overpass outputs
 function upload_geojson($connection, $json){
     echo "<h2>parsing json</h2>";
     echo "=============<br>";
@@ -302,7 +339,8 @@ function upload_geojson($connection, $json){
     }
 }
 
-function upload_geodata($connection, $json){
+//that's for raw data that overpass produces
+function upload_basedata($connection, $json){
     echo "<br>uploading some serious data<br>";
     //echo "<h2>parsing json</h2>";
     //echo "=============<br>";
@@ -323,6 +361,7 @@ function upload_geodata($connection, $json){
 
      //next part is for adding a test node to get its id and follow it with mass nodes so that new ids can be projected
     $rand_osm_parent = generate_random_string(18);
+
     $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
         VALUES (60.6, 30.3, '$json_timestamp', '$rand_osm_parent')";
 
@@ -349,7 +388,7 @@ function upload_geodata($connection, $json){
     $node_counter = $last_node_id + 1;
     $node_ids_for_osm_parents = array();
 
-
+/*
     echo "<br>======test=====arrr=====";
     $test_arr = array();
     //$test_arr[] = array("711" => "11");
@@ -358,7 +397,7 @@ function upload_geodata($connection, $json){
     echo "<br>=";
     echo $test_arr["711"];
     echo "<br>";
-
+ */
 
     $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
                 VALUES ";
@@ -419,6 +458,9 @@ function upload_geodata($connection, $json){
                     echo "Error: " . $sql . "<br>" . $connection->error;
                 }
 
+    //cleaning up test node used to get counter value
+    $sql_d = "DELETE FROM Nodes WHERE node_osm_parent='$rand_osm_parent'";
+
     /*
     echo "<br>adding nodes<br>";
     $sql_i .= "(60.6, 30.3, '$json_timestamp', '777'), ";
@@ -429,17 +471,25 @@ function upload_geodata($connection, $json){
         echo "Error: " . $sql . "<br>" . $connection->error;
     }
      */
+
+    /*
     echo "<br>====3560643324.====";
     echo $node_ids_for_osm_parents['3560643324'];
     echo "<br>====-7...====";
     echo $node_ids_for_osm_parents['-734323972'];
     echo "<br>";
     var_dump($node_ids_for_osm_parents);
+     */
     echo "<br>";
     echo "<br>nodes are done<br>";
+    
+
     //now onto lines
-    $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+    $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
                 VALUES ";
+    //$sql_iq = "INSERT INTO qLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+    //            VALUES ";
+
     foreach ($geoj_arr as $geoj_element) {
 
         //$sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
@@ -454,7 +504,7 @@ function upload_geodata($connection, $json){
             //echo "feature_id = ". $geoj_element['id'];
             //echo "<br>=============<br>";
             $nodes_arr = $geoj_element['nodes'];
-            var_dump($nodes_arr);
+            //var_dump($nodes_arr);
             echo "<br>";
             for ($i = 0; $i < count($nodes_arr); ++$i) {
                 //echo "<br>3<br>";
@@ -476,32 +526,111 @@ function upload_geodata($connection, $json){
 
                     //find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
 
-                    $sql_i .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
-                    $q_len = strlen($sql_i);
+                    $sql_ib .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
+                    //$sql_iq .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
+                    $q_len = strlen($sql_ib);
                     if ($q_len > 1000) {
-                        //echo "<br>adding nodes<br>";
-                        //TODO: remove last element instead. (same with nodes)
-                        //$sql_i .= "(-1, -1, '$json_timestamp', '777')";
-                        $sql_i = rtrim($sql_i, ", ");
-                        //echo $sql_i;
-                        if ($connection->query($sql_i) === TRUE) {
-                            echo "lines inserted";
+                        $sql_ib = rtrim($sql_ib, ", ");
+                        //$sql_iq = rtrim($sql_iq, ", ");
+                        if ($connection->query($sql_ib) === TRUE) {
+                            echo "base lines inserted";
                         } else {
                             echo "Error: " . $sql . "<br>" . $connection->error;
                             echo "<br>";
-                            echo $sql_i;
+                            echo $sql_ib;
                             echo "<br>";
                         }
+                        //next = to test (commented now)
+/*                        
+    $sql_iq =  "INSERT INTO QLines (parent_line_id) SELECT (bline_id) FROM BaseLines";
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "qlines parents copied from blines";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_iq;
+        echo "<br>";
+    }
+    $sql_iq =  "UPDATE QLines AS ql
+                LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
+                SET ql.qline_start_node_id = bl.bline_start_node_id,
+                    ql.qline_end_node_id = bline_end_node_id";
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "qlines nodes copied from blines";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_iq;
+        echo "<br>";
+    }
+ */
+                        /*
+                        if ($connection->query($sql_iq) === TRUE) {
+                            echo "quality lines inserted";
+                        } else {
+                            echo "Error: " . $sql . "<br>" . $connection->error;
+                        }
+                         */
 
-                        $sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+                        $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
                                     VALUES ";
+                        //$sql_iq = "INSERT INTO qLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
+                        //            VALUES ";
+
                     }
                 }
             }
         }
     
     }
+    $sql_ib = rtrim($sql_ib, ", ");
+    //$sql_iq = rtrim($sql_iq, ", ");
+    if ($connection->query($sql_ib) === TRUE) {
+        echo "base lines inserted";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_ib;
+        echo "<br>";
+    }
+
+    $sql_iq =  "INSERT INTO QLines (parent_line_id) SELECT (bline_id) FROM BaseLines";
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "qlines parents copied from blines";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_iq;
+        echo "<br>";
+    }
+    $sql_iq =  "UPDATE QLines AS ql
+                LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
+                SET ql.qline_start_node_id = bl.bline_start_node_id,
+                    ql.qline_end_node_id = bline_end_node_id";
+
+/*
+ $sql_iq =  "INSERT INTO QLines (qline_start_node_id, qline_end_node_id, parent_line_id)
+                                    SELECT (bline_start_node_id, bline_end_node_id, bline_id) FROM BaseLines";
+ */
+
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "qlines nodes copied from blines";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_iq;
+        echo "<br>";
+    }
+
+
+    /*
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "quality lines inserted";
+        } else {
+            echo "Error: " . $sql . "<br>" . $connection->error;
+        }
     echo "<br>= and lines are done =<br>";
+     */
     //$this->db->trans_complete();
 }
 
@@ -534,15 +663,16 @@ function create_json($connection, $coords_one, $coords_two) {
     $lon_max = 59.9440496;
     $lon_min = 59.9440490;
  */
+    //TODO: fix sql to match new db (qparts)
     $sql_q = "SELECT ln.line_id as line_id,
                     ns.latitude as start_latitude,
                     ns.longitude as start_longitude,
                     ne.latitude as end_latitude,
                     ne.longitude as end_longitude,
-                    ln.surface_quality as surface_quality,
+                    qp.surface_quality as surface_quality,
                     pavement_translation.pavement_name as pavement_type
                     
-                FROM nodes ns, nodes ne, flines ln
+                FROM nodes ns, nodes ne, baselines ln, qparts qp
                 LEFT JOIN pavement_translation
                 ON ln.pavement_type_id = pavement_translation.pavement_id
                 WHERE (
