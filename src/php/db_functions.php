@@ -176,7 +176,7 @@ function create_tables($conn) {
 
     echo "creating quality lines table";
     $sql = "CREATE TABLE QLines (
-        qpart_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        qline_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         parent_line_id INT(8) NOT NULL, 
         length INT(8) NOT NULL,
         qline_start_node_id INT(8) NOT NULL, 
@@ -314,8 +314,10 @@ function upload_geojson($connection, $json){
             var_dump($coord);
             echo "<br>=============<br>";
 
-            $lat = $coord[0];
-            $lon = $coord[1];
+            //ffs. why is the order reversed?
+            $lat = $coord[1];
+            $lon = $coord[0];
+            $coord = array($lat, $lon);
             echo "<br>==lat and long=<br>";
             echo $lat. " , ".$lon."<br>";
             echo "<br>=============<br>";
@@ -324,8 +326,9 @@ function upload_geojson($connection, $json){
             if ($i>0) { 
                 echo "<br>===========lines inc=================<br>";
                 $prev_coord = $coords_arr[$i-1];
-                $prev_lat = $prev_coord[0];
-                $prev_lon = $prev_coord[1];
+                $prev_lat = $prev_coord[1];
+                $prev_lon = $prev_coord[0];
+                $prev_coord = array($prev_lat, $prev_lon);
 //                $row = $res->fetch_assoc(); 
                 $prev_node_id = find_or_add_node($connection, $prev_coord, $json_timestamp, $feature_id);
                 echo "<br>========prev node========<br>";
@@ -342,22 +345,11 @@ function upload_geojson($connection, $json){
 //that's for raw data that overpass produces
 function upload_basedata($connection, $json){
     echo "<br>uploading some serious data<br>";
-    //echo "<h2>parsing json</h2>";
-    //echo "=============<br>";
     $json_data = json_decode($json, true);
     $json_osm3s = $json_data['osm3s'];
     $json_timestamp_string = $json_osm3s['timestamp_osm_base'];
-    // if this works, need to remove some redundancy
     $json_timestamp = date("Y-m-d H:i:s", strtotime($json_timestamp_string));
-    //echo "<br>=============<br>";
-    //echo "timestamp_string = ". $json_timestamp_string;
-    //echo "<br>timestamp = ". $json_timestamp;
-    //echo "<br>=============<br>";
     $geoj_arr = $json_data['elements'];
-
-    //to start with adding nodes to db
-
-    //$this->db->trans_start();
 
      //next part is for adding a test node to get its id and follow it with mass nodes so that new ids can be projected
     $rand_osm_parent = generate_random_string(18);
@@ -388,16 +380,6 @@ function upload_basedata($connection, $json){
     $node_counter = $last_node_id + 1;
     $node_ids_for_osm_parents = array();
 
-/*
-    echo "<br>======test=====arrr=====";
-    $test_arr = array();
-    //$test_arr[] = array("711" => "11");
-    //$test_arr[] = array("722" => "22");
-    $test_arr[711] = 11;
-    echo "<br>=";
-    echo $test_arr["711"];
-    echo "<br>";
- */
 
     $sql_i = "INSERT INTO Nodes (latitude, longitude, node_osm_date, node_osm_parent)
                 VALUES ";
@@ -408,35 +390,16 @@ function upload_basedata($connection, $json){
         if ($element_type == "node") {
 
             $element_id = $geoj_element['id'];
-            //echo "feature_id = ". $geoj_element['id'];
-            //echo "<br>=============<br>";
            
             $lat = $geoj_element['lat'];
             $lon = $geoj_element['lon'];
-            //echo "<br>==lat and long=<br>";
-            //echo $lat. " , ".$lon."<br>";
-            //echo "<br>=============<br>";
-            //$coord = array($lat, $lon);
-            //$node_id = find_or_add_node($connection, $coord, $json_timestamp, $element_id);
 
-
-
-            //computing id projections
-/*
-            echo "<br>";
-            echo $element_id;
-            echo "<br>";
-*/
-    //$node_ids_for_osm_parents[] = array($element_id => $node_counter);
             $node_ids_for_osm_parents[(string)$element_id] = $node_counter;
             $node_counter += 1;
 
             $sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
             $q_len = strlen($sql_i);
             if ($q_len > 10000) {
-                //echo "<br>adding nodes<br>";
-                //$sql_i .= "(60.6, 30.3, '$json_timestamp', '777')";
-            //echo $sql_i;
                 $sql_i = rtrim($sql_i, ", ");
                 if ($connection->query($sql_i) === TRUE) {
                     //echo "nodes inserted";
@@ -451,35 +414,22 @@ function upload_basedata($connection, $json){
             }
         }
     }
-     $sql_i = rtrim($sql_i, ", ");
-                if ($connection->query($sql_i) === TRUE) {
-                    //echo "nodes inserted";
-                } else {
-                    echo "Error: " . $sql . "<br>" . $connection->error;
-                }
-
-    //cleaning up test node used to get counter value
-    $sql_d = "DELETE FROM Nodes WHERE node_osm_parent='$rand_osm_parent'";
-
-    /*
-    echo "<br>adding nodes<br>";
-    $sql_i .= "(60.6, 30.3, '$json_timestamp', '777'), ";
-    echo $sql_i;
+    $sql_i = rtrim($sql_i, ", ");
     if ($connection->query($sql_i) === TRUE) {
-        echo "nodes inserted";
+        //echo "nodes inserted";
     } else {
         echo "Error: " . $sql . "<br>" . $connection->error;
     }
-     */
 
-    /*
-    echo "<br>====3560643324.====";
-    echo $node_ids_for_osm_parents['3560643324'];
-    echo "<br>====-7...====";
-    echo $node_ids_for_osm_parents['-734323972'];
-    echo "<br>";
-    var_dump($node_ids_for_osm_parents);
-     */
+    //cleaning up test node used to get counter value
+    $sql_d = "DELETE FROM Nodes WHERE node_osm_parent='$rand_osm_parent'";
+    if ($connection->query($sql_d) === TRUE) {
+       echo "<br>anchor node removed<br>";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+    }
+
+
     echo "<br>";
     echo "<br>nodes are done<br>";
     
@@ -487,51 +437,28 @@ function upload_basedata($connection, $json){
     //now onto lines
     $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
                 VALUES ";
-    //$sql_iq = "INSERT INTO qLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
-    //            VALUES ";
 
     foreach ($geoj_arr as $geoj_element) {
 
-        //$sql_i .= "($lat, $lon, '$json_timestamp', '$element_id'), ";
-        //echo "<br>1<br>";
         $element_type = $geoj_element['type'];
-        /*$sql_i = "INSERT INTO FLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
-            VALUES "; */
         if ($element_type == "way") {
-            //echo "<br>2<br>";
 
             $element_id = $geoj_element['id'];
-            //echo "feature_id = ". $geoj_element['id'];
-            //echo "<br>=============<br>";
             $nodes_arr = $geoj_element['nodes'];
-            //var_dump($nodes_arr);
             echo "<br>";
             for ($i = 0; $i < count($nodes_arr); ++$i) {
-                //echo "<br>3<br>";
                 $node_osm_id = (string)$nodes_arr[$i];
-                //echo "<br>==dropping coords=<br>";
-                //var_dump($node_osm_id);
-                //echo "<br>=============<br>";
-
-                //$node_id = get_node_id_by_osm_parent($connection, $node_osm_id);
                 $node_id = $node_ids_for_osm_parents[$node_osm_id];
 
                 if ($i>0) { 
-                    //echo "<br>===========lines inc=================<br>";
                     $prev_node_osm_id = (string)$nodes_arr[$i-1];
 
-                    //$prev_node_id = get_node_id_by_osm_parent($connection, $prev_node_osm_id);
                     $prev_node_id = $node_ids_for_osm_parents[$prev_node_osm_id];
 
-
-                    //find_or_add_line($connection, $node_id, $prev_node_id, $json_timestamp, $element_id);
-
                     $sql_ib .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
-                    //$sql_iq .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
                     $q_len = strlen($sql_ib);
                     if ($q_len > 1000) {
                         $sql_ib = rtrim($sql_ib, ", ");
-                        //$sql_iq = rtrim($sql_iq, ", ");
                         if ($connection->query($sql_ib) === TRUE) {
                             echo "base lines inserted";
                         } else {
@@ -540,43 +467,9 @@ function upload_basedata($connection, $json){
                             echo $sql_ib;
                             echo "<br>";
                         }
-                        //next = to test (commented now)
-/*                        
-    $sql_iq =  "INSERT INTO QLines (parent_line_id) SELECT (bline_id) FROM BaseLines";
-    if ($connection->query($sql_iq) === TRUE) {
-        echo "qlines parents copied from blines";
-    } else {
-        echo "Error: " . $sql . "<br>" . $connection->error;
-        echo "<br>";
-        echo $sql_iq;
-        echo "<br>";
-    }
-    $sql_iq =  "UPDATE QLines AS ql
-                LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
-                SET ql.qline_start_node_id = bl.bline_start_node_id,
-                    ql.qline_end_node_id = bline_end_node_id";
-    if ($connection->query($sql_iq) === TRUE) {
-        echo "qlines nodes copied from blines";
-    } else {
-        echo "Error: " . $sql . "<br>" . $connection->error;
-        echo "<br>";
-        echo $sql_iq;
-        echo "<br>";
-    }
- */
-                        /*
-                        if ($connection->query($sql_iq) === TRUE) {
-                            echo "quality lines inserted";
-                        } else {
-                            echo "Error: " . $sql . "<br>" . $connection->error;
-                        }
-                         */
 
                         $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
                                     VALUES ";
-                        //$sql_iq = "INSERT INTO qLines (start_node_id, end_node_id, line_osm_date, line_osm_parent)
-                        //            VALUES ";
-
                     }
                 }
             }
@@ -584,7 +477,6 @@ function upload_basedata($connection, $json){
     
     }
     $sql_ib = rtrim($sql_ib, ", ");
-    //$sql_iq = rtrim($sql_iq, ", ");
     if ($connection->query($sql_ib) === TRUE) {
         echo "base lines inserted";
     } else {
@@ -608,10 +500,6 @@ function upload_basedata($connection, $json){
                 SET ql.qline_start_node_id = bl.bline_start_node_id,
                     ql.qline_end_node_id = bline_end_node_id";
 
-/*
- $sql_iq =  "INSERT INTO QLines (qline_start_node_id, qline_end_node_id, parent_line_id)
-                                    SELECT (bline_start_node_id, bline_end_node_id, bline_id) FROM BaseLines";
- */
 
     if ($connection->query($sql_iq) === TRUE) {
         echo "qlines nodes copied from blines";
@@ -621,17 +509,6 @@ function upload_basedata($connection, $json){
         echo $sql_iq;
         echo "<br>";
     }
-
-
-    /*
-    if ($connection->query($sql_iq) === TRUE) {
-        echo "quality lines inserted";
-        } else {
-            echo "Error: " . $sql . "<br>" . $connection->error;
-        }
-    echo "<br>= and lines are done =<br>";
-     */
-    //$this->db->trans_complete();
 }
 
 //TODO: remove direct "footway" string. gotta move it through db
@@ -663,22 +540,22 @@ function create_json($connection, $coords_one, $coords_two) {
     $lon_max = 59.9440496;
     $lon_min = 59.9440490;
  */
-    //TODO: fix sql to match new db (qparts)
-    $sql_q = "SELECT ln.line_id as line_id,
+   
+    $sql_q = "SELECT qln.qline_id as line_id,
                     ns.latitude as start_latitude,
                     ns.longitude as start_longitude,
                     ne.latitude as end_latitude,
                     ne.longitude as end_longitude,
-                    qp.surface_quality as surface_quality,
+                    qln.surface_quality as surface_quality,
                     pavement_translation.pavement_name as pavement_type
                     
-                FROM nodes ns, nodes ne, baselines ln, qparts qp
+                FROM nodes ns, nodes ne, qlines qln
                 LEFT JOIN pavement_translation
-                ON ln.pavement_type_id = pavement_translation.pavement_id
+                ON qln.pavement_type_id = pavement_translation.pavement_id AND
+                    pavement_translation.language_id = 1
                 WHERE (
-                    ln.start_node_id = ns.node_id AND
-                    pavement_translation.language_id = 1 AND
-                    ln.end_node_id = ne.node_id
+                    qln.qline_start_node_id = ns.node_id  AND
+                    qln.qline_end_node_id = ne.node_id
                     AND ((
                         (ns.latitude < $lat_max AND
                         ne.latitude > $lat_min
@@ -694,40 +571,37 @@ function create_json($connection, $coords_one, $coords_two) {
                     )";
 
     $res = $connection->query($sql_q);
+    echo "<br>";
+    echo $sql_q;
+    echo "<br>";
+    echo "<br>";
+    var_dump($res);
+    echo "<br>";
     $rows = array();
     if($res->num_rows > 0) {
         while($row = $res->fetch_assoc()) {
-            echo "id: " . $row["line_id"]. "; start node: ". $row["start_node_id"]. "; end node: " . $row["end_node_id"]. "; pavement type: " . $row["pavement_type"] ."<br>";
-            //$rows['liness'][] = $row;
-            /*
-            $properties = array($row["line_id"],  $row["pavement_type"], $row["surface_quality"]);
-            $geometry = array($row["start_latitude"], $row["start_longitude"], $row["end_latitude"], $row["end_longitude"]);
-            $rows['liness'][] = array($properties, $geometry);
-             */
-
-            //TODO: remove direct "footway" string. gotta move it through db
-            //TODO: add color through db
+            echo "id: " . $row["line_id"]. "; start node: (". $row["start_latitude"]. ", ". $row["start_longitude"] . "); end node: (". $row["end_latitude"]. ", ". $row["end_longitude"] . "); pavement type: " . $row["pavement_type"] ."<br>";
+            //TODO: properly work with color
             $properties = array("name"                  => "footway",
                                 "line_id"               => $row["line_id"],
                                 "pavement_type"         => $row["pavement_type"],
-                                "surface_quality"       => $row["surface_quality"]);
-            /*
-            $geometry = array("start_latitude"          => $row["start_latitude"],
-                              "start_longitude"         => $row["start_longitude"],
-                              "end_latitude"            => $row["end_latitude"],
-                              "end_longitude"           => $row["end_longitude"]);
-             */
-            $start_coordinates = array($row["start_latitude"], $row["start_longitude"]);
-            $end_coordinates =  array($row["end_latitude"], $row["end_longitude"]);
+                                "quality"               => $row["surface_quality"]);
+                                //"color"                 => "yellow");
+            //
+            //$geometry = array("start_latitude"          => $row["start_latitude"],
+              //                "start_longitude"         => $row["start_longitude"],
+                //              "end_latitude"            => $row["end_latitude"],
+                  //            "end_longitude"           => $row["end_longitude"]);
+             
+            //geosjon format has longitude, latidude order for some odd reason
+            $start_coordinates = array(doubleval($row["start_longitude"]), doubleval($row["start_latitude"]));
+            $end_coordinates =  array(doubleval($row["end_longitude"]), doubleval($row["end_latitude"]));
 
+            //geojson wants array doubled -_-
             $geometry = array("type"            => "MultiLineString",
-                              "coordinates"     => array($start_coordinates, $end_coordinates));
+                              "coordinates"     => array(array($start_coordinates, $end_coordinates)));
 
-            //$rows['liness'][] = array($properties, $geometry);
-            /*
-            $rows['features'][] = array("type"        => "Feature",
-                                      "properties"  => $properties,
-                                      "geometry"    => $geometry); */
+
 
             $rows[] = array("type"        => "Feature",
                             "properties"  => $properties,
@@ -737,6 +611,8 @@ function create_json($connection, $coords_one, $coords_two) {
     } else {
         echo "0 results";
     }
+
+
     echo "<br>===== rows aquired =====<br>";
     print json_encode(array("type" => "FeatureCollection", "features" => $rows));
 }
