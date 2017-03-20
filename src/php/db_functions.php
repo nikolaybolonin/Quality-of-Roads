@@ -547,12 +547,15 @@ function create_json($connection, $coords_one, $coords_two) {
                     ne.latitude as end_latitude,
                     ne.longitude as end_longitude,
                     qln.surface_quality as surface_quality,
+                    quality.quality_color_hex as color,
                     pavement_translation.pavement_name as pavement_type
                     
                 FROM nodes ns, nodes ne, qlines qln
                 LEFT JOIN pavement_translation
                 ON qln.pavement_type_id = pavement_translation.pavement_id AND
                     pavement_translation.language_id = 1
+                LEFT JOIN quality
+                ON qln.surface_quality = quality.quality_value
                 WHERE (
                     qln.qline_start_node_id = ns.node_id  AND
                     qln.qline_end_node_id = ne.node_id
@@ -580,13 +583,17 @@ function create_json($connection, $coords_one, $coords_two) {
     $rows = array();
     if($res->num_rows > 0) {
         while($row = $res->fetch_assoc()) {
-            echo "id: " . $row["line_id"]. "; start node: (". $row["start_latitude"]. ", ". $row["start_longitude"] . "); end node: (". $row["end_latitude"]. ", ". $row["end_longitude"] . "); pavement type: " . $row["pavement_type"] ."<br>";
-            //TODO: properly work with color
+            echo "id: " . $row["line_id"]. "; start node: (". $row["start_latitude"]. ", ". $row["start_longitude"] . "); end node: (". $row["end_latitude"]. ", ". $row["end_longitude"] . "); pavement type: " . $row["pavement_type"] ."; color: " . $row["color"] . "<br>";
+            //null color is white, it means unknown
+            $color_hex = "#ffffff";
+            if ($row["color"] != null) {
+                $color_hex = "#".$row["color"];
+            }
             $properties = array("name"                  => "footway",
                                 "line_id"               => $row["line_id"],
                                 "pavement_type"         => $row["pavement_type"],
-                                "quality"               => $row["surface_quality"]);
-                                //"color"                 => "yellow");
+                                "quality"               => $row["surface_quality"],
+                                "color"                 => $color_hex);
             //
             //$geometry = array("start_latitude"          => $row["start_latitude"],
               //                "start_longitude"         => $row["start_longitude"],
