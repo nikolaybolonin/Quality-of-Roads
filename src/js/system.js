@@ -311,6 +311,38 @@ var zoom = 18;
 //  PAGE INITIALIZATION - FUNCTIONS
 // ========================================================================
 
+function getLineDescrText(event) {
+    var lineOptionsText = '';
+
+    if (event.feature.getProperty('name') != undefined) {
+      lineOptionsText = lineOptionsText + 'Name: ' + event.feature.getProperty('name') + '</br>'
+    }
+    if (event.feature.getProperty('id') != undefined) {
+      lineOptionsText = lineOptionsText + 'ID: ' + event.feature.getProperty('id') + '</br>'
+    }
+    if (event.feature.getProperty('surface') != undefined) {
+      lineOptionsText = lineOptionsText + 'Surface: ' + event.feature.getProperty('surface') + '</br>'
+    }
+    if (event.feature.getProperty('width') != undefined) {
+      lineOptionsText = lineOptionsText + 'Width: ' + event.feature.getProperty('width') + 'm</br>'
+    }
+    if (event.feature.getProperty('populousness') != undefined) {
+      lineOptionsText = lineOptionsText + 'Populousness: ' + event.feature.getProperty('populousness') + '</br>'
+    }
+    if (event.feature.getProperty('quality') != undefined) {
+      lineOptionsText = lineOptionsText + 'Quality: ' + event.feature.getProperty('quality') + '</br>'
+    }
+    if (event.feature.getProperty('rating') != undefined) {
+      lineOptionsText = lineOptionsText + 'Rating: ' + event.feature.getProperty('rating') + '</br>'
+    }
+    if (event.feature.getProperty('color') != undefined) {
+      lineOptionsText = lineOptionsText + 'Color: ' + event.feature.getProperty('color') + '</br>'
+    }
+    if (event.feature.getProperty('descendants') != undefined) {
+      lineOptionsText = lineOptionsText + 'Descendants: ' + event.feature.getProperty('descendants') + '</br>'
+    }
+    return lineOptionsText;
+}
 
 // Создаем карту с API Google Maps (googleMapInit вызывается из HTML)
 function googleMapInit() {
@@ -561,36 +593,10 @@ function googleMapInit() {
     infoPopup.open(GoogleMap);
     infoPopup.setPosition(event.latLng);
 
-    var lineOptionsText = '';
-    if (event.feature.getProperty('name') != undefined) {
-      lineOptionsText = lineOptionsText + 'Name: ' + event.feature.getProperty('name') + '</br>'
-    }
-    if (event.feature.getProperty('id') != undefined) {
-      lineOptionsText = lineOptionsText + 'ID: ' + event.feature.getProperty('id') + '</br>'
-    }
-    if (event.feature.getProperty('surface') != undefined) {
-      lineOptionsText = lineOptionsText + 'Surface: ' + event.feature.getProperty('surface') + '</br>'
-    }
-    if (event.feature.getProperty('width') != undefined) {
-      lineOptionsText = lineOptionsText + 'Width: ' + event.feature.getProperty('width') + 'm</br>'
-    }
-    if (event.feature.getProperty('populousness') != undefined) {
-      lineOptionsText = lineOptionsText + 'Populousness: ' + event.feature.getProperty('populousness') + '</br>'
-    }
-    if (event.feature.getProperty('quality') != undefined) {
-      lineOptionsText = lineOptionsText + 'Quality: ' + event.feature.getProperty('quality') + '</br>'
-    }
-    if (event.feature.getProperty('rating') != undefined) {
-      lineOptionsText = lineOptionsText + 'Rating: ' + event.feature.getProperty('rating') + '</br>'
-    }
-    if (event.feature.getProperty('color') != undefined) {
-      lineOptionsText = lineOptionsText + 'Color: ' + event.feature.getProperty('color') + '</br>'
-    }
-    if (event.feature.getProperty('descendants') != undefined) {
-      lineOptionsText = lineOptionsText + 'Descendants: ' + event.feature.getProperty('descendants') + '</br>'
-    }
+    var lineDescr2 = '';
+    lineDescr2 = getLineDescrText(event);
 
-    infoPopup.setContent(lineOptionsText);
+    infoPopup.setContent(lineDescr2);
 
   });
 
@@ -602,36 +608,10 @@ function googleMapInit() {
   // По клику выводим инфу на лейбл сбоку.
   GoogleMap.data.addListener('click', function(event) {
 
-    var lineOptionsText = '';
-    if (event.feature.getProperty('name') != undefined) {
-      lineOptionsText = lineOptionsText + 'Name: ' + event.feature.getProperty('name') + '</br>'
-    }
-    if (event.feature.getProperty('id') != undefined) {
-      lineOptionsText = lineOptionsText + 'ID: ' + event.feature.getProperty('id') + '</br>'
-    }
-    if (event.feature.getProperty('surface') != undefined) {
-      lineOptionsText = lineOptionsText + 'Surface: ' + event.feature.getProperty('surface') + '</br>'
-    }
-    if (event.feature.getProperty('width') != undefined) {
-      lineOptionsText = lineOptionsText + 'Width: ' + event.feature.getProperty('width') + 'm</br>'
-    }
-    if (event.feature.getProperty('populousness') != undefined) {
-      lineOptionsText = lineOptionsText + 'Populousness: ' + event.feature.getProperty('populousness') + '</br>'
-    }
-    if (event.feature.getProperty('quality') != undefined) {
-      lineOptionsText = lineOptionsText + 'Quality: ' + event.feature.getProperty('quality') + '</br>'
-    }
-    if (event.feature.getProperty('rating') != undefined) {
-      lineOptionsText = lineOptionsText + 'Rating: ' + event.feature.getProperty('rating') + '</br>'
-    }
-    if (event.feature.getProperty('color') != undefined) {
-      lineOptionsText = lineOptionsText + 'Color: ' + event.feature.getProperty('color') + '</br>'
-    }
-    if (event.feature.getProperty('descendants') != undefined) {
-      lineOptionsText = lineOptionsText + 'Descendants: ' + event.feature.getProperty('descendants') + '</br>'
-    }
-
-    lineOptions.innerHTML = lineOptionsText;
+    //var lineOptionsText = '';
+    var lineDescr2 = '';
+    lineDescr2 = getLineDescrText(event);
+    lineOptions.innerHTML = lineDescr2;
 
   });
 

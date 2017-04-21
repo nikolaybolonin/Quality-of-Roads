@@ -178,7 +178,7 @@ function create_tables($conn) {
     $sql = "CREATE TABLE QLines (
         qline_id INT(8) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         parent_line_id INT(8) NOT NULL, 
-        length INT(8) NOT NULL,
+        width FLOAT(3,1),
         qline_start_node_id INT(8) NOT NULL, 
         qline_end_node_id INT(8) NOT NULL,
         surface_quality INT(1),
@@ -434,8 +434,23 @@ function upload_basedata($connection, $json){
     echo "<br>nodes are done<br>";
     
 
+    //adding extra columns
+    $sql_addc = "ALTER TABLE BaseLines
+                    ADD COLUMN pavement_type_id INT(2) after line_osm_date,
+                    ADD COLUMN quality_value INT(1) after pavement_type_id,
+                    ADD COLUMN width FLOAT(3,1) after quality_value";
+    
+    if ($connection->query($sql_addc) === TRUE) {
+        echo "columns added";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_addc;
+        echo "<br>";
+    }
+    
     //now onto lines
-    $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
+    $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent, pavement_type_id, quality_value, width)
                 VALUES ";
 
     foreach ($geoj_arr as $geoj_element) {
@@ -445,6 +460,97 @@ function upload_basedata($connection, $json){
 
             $element_id = $geoj_element['id'];
             $nodes_arr = $geoj_element['nodes'];
+            $element_tags = $geoj_element['tags'];
+            
+            //getting width
+            $width = NULL;
+            if (array_key_exists('width', $element_tags)) {
+                $width = (float)$element_tags['width'];
+            }
+            
+            //getting some smoothness
+            $quality_value = NULL;
+            if (array_key_exists('smoothness', $element_tags)) {
+                $quality_string = $element_tags['smoothness'];
+                switch ($quality_string) {
+                    case 'excellent':
+                        $quality_value = 4;
+                        break;
+                    case 'good':
+                        $quality_value = 3;
+                        break;
+                    case 'intermediate':
+                        $quality_value = 2;
+                        break;
+                    case 'bad':
+                        $quality_value = 1;
+                        break;
+                    case 'very_bad':
+                        $quality_value = 0;
+                        break;
+                    case 'horrible':
+                        $quality_value = 0;
+                        break;
+                    case 'very_horrible':
+                        $quality_value = 0;
+                        break;
+                    case 'impassable':
+                        $quality_value = 0;
+                        break;
+                }
+            }
+            
+            //getting pavement type id:
+            $pavement_type_id = NULL;
+            if (array_key_exists('surface', $element_tags)) {
+                $pavement_type_string = $element_tags['surface'];
+                switch ($pavement_type_string) {
+                    case 'asphalt':
+                        $pavement_type_id = 1;
+                        break;
+                    case 'cobblestone':
+                        $pavement_type_id = 2;
+                        break;
+                    case 'compacted':
+                        $pavement_type_id = 3;
+                        $quality_value = 1;
+                        break;
+                    case 'concrete':
+                        $pavement_type_id = 4;
+                        break;
+                    case 'dirt':
+                        $pavement_type_id = 3;
+                        $quality_value = 0;
+                        break;
+                    case 'fine_gravel':
+                        $pavement_type_id = 6;
+                        $quality_value = 2;
+                        break;
+                    case 'granite':
+                        $pavement_type_id = 7;
+                        break;
+                    case 'grass':
+                        $pavement_type_id = 5;
+                        $quality_value = 0;
+                        break;
+                    case 'gravel':
+                        $pavement_type_id = 6;
+                        $quality_value = 2;
+                        break;
+                    case 'paving_stones':
+                        $pavement_type_id = 2;
+                        break;
+                    case 'pebblestone':
+                        $pavement_type_id = 2;
+                        $quality_value = 1;
+                        break;
+                    case 'sand':
+                        $pavement_type_id = 9;
+                        $quality_value = 0;
+                        break;
+                }
+            }
+            
             echo "<br>";
             for ($i = 0; $i < count($nodes_arr); ++$i) {
                 $node_osm_id = (string)$nodes_arr[$i];
@@ -455,7 +561,23 @@ function upload_basedata($connection, $json){
 
                     $prev_node_id = $node_ids_for_osm_parents[$prev_node_osm_id];
 
-                    $sql_ib .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id'), ";
+                    //$sql_ib .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id', '$pavement_type_id', '$quality_value', '$width'), ";
+                    $sql_ib .= "($node_id, $prev_node_id, '$json_timestamp', '$element_id', ";
+                    if ( $pavement_type_id == null) {
+                        $sql_ib .= "NULL, "; 
+                    } else {
+                        $sql_ib .= "'$pavement_type_id',";
+                    }
+                    if ( $quality_value == null) {
+                        $sql_ib .= "NULL, "; 
+                    } else {
+                        $sql_ib .= "'$quality_value',";
+                    }
+                    if ( $width == null) {
+                        $sql_ib .= "NULL), "; 
+                    } else {
+                        $sql_ib .= "'$width'),";
+                    }
                     $q_len = strlen($sql_ib);
                     if ($q_len > 1000) {
                         $sql_ib = rtrim($sql_ib, ", ");
@@ -468,7 +590,7 @@ function upload_basedata($connection, $json){
                             echo "<br>";
                         }
 
-                        $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent)
+                        $sql_ib = "INSERT INTO BaseLines (bline_start_node_id, bline_end_node_id, line_osm_date, line_osm_parent, pavement_type_id, quality_value, width)
                                     VALUES ";
                     }
                 }
@@ -495,10 +617,16 @@ function upload_basedata($connection, $json){
         echo $sql_iq;
         echo "<br>";
     }
+    
+    //TODO:gotta understand why this does not work
+    /*
     $sql_iq =  "UPDATE QLines AS ql
                 LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
                 SET ql.qline_start_node_id = bl.bline_start_node_id,
-                    ql.qline_end_node_id = bline_end_node_id";
+                    ql.qline_end_node_id = bl.bline_end_node_id,
+                    ql.pavement_type_id = bl.pavement_type_id,
+                    ql.surface_quality = bl.quality_value,
+                    ql.width = bl.width,";
 
 
     if ($connection->query($sql_iq) === TRUE) {
@@ -507,6 +635,41 @@ function upload_basedata($connection, $json){
         echo "Error: " . $sql . "<br>" . $connection->error;
         echo "<br>";
         echo $sql_iq;
+        echo "<br>";
+    }
+    */
+    
+    $sql_iq =  "UPDATE QLines AS ql
+                LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
+                SET ql.qline_start_node_id = bl.bline_start_node_id,
+                    ql.qline_end_node_id = bl.bline_end_node_id,
+                    ql.pavement_type_id = bl.pavement_type_id,
+                    ql.surface_quality = bl.quality_value,
+                    ql.width = bl.width";
+
+
+    if ($connection->query($sql_iq) === TRUE) {
+        echo "qlines nodes copied from blines";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_iq;
+        echo "<br>";
+    }
+    
+    
+    
+    $sql_delc = "ALTER TABLE BaseLines
+                    DROP COLUMN pavement_type_id,
+                    DROP COLUMN quality_value,
+                    DROP COLUMN width";
+    
+    if ($connection->query($sql_delc) === TRUE) {
+        echo "columns dropped";
+    } else {
+        echo "Error: " . $sql . "<br>" . $connection->error;
+        echo "<br>";
+        echo $sql_delc;
         echo "<br>";
     }
 }
@@ -565,7 +728,7 @@ function create_json($connection, $coords_one, $coords_two) {
                         ) OR (
                         ns.latitude > $lat_min AND
                         ne.latitude < $lat_max)
-                    ) OR (
+                    ) AND (
                         (ns.longitude < $lon_max AND
                         ne.longitude > $lon_min
                         ) OR (

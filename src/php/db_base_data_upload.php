@@ -27,8 +27,24 @@ function upload_base_data($connection) {
     $sql_i = "INSERT INTO pavement_translation (pavement_id, language_id, pavement_name, pavement_descr)
                                     VALUES (1, 1, 'asphalt', 'fairly smooth but can have cracks and may include gravel'),
                                             (1, 2, 'асфальт', 'сравнительно ровная поверхность, возможны трещины и может включать в себя гравий'),
-                                            (2, 1, 'tiles', 'small beveled tiles, cracks are imminent, really uncomfortable for small wheels'),
-                                            (2, 2, 'плитка', 'мелкая неровная плитка, постоянные грани, дискофортно для маленький колес');";
+                                            (2, 1, 'cobblestone', 'uneven stones, layed together - cracks are imminent, uncomfortable even for medium wheels'),
+                                            (2, 2, 'брусчатка', 'неровный булыжник, постоянные грани, дискофортно даже для средкних колес'),
+                                            (3, 1, 'compacted earth', 'there is a chance of it being smooth but a good chance of dirt'),
+                                            (3, 2, 'утоптанная земля', 'может быть ровной, но не всегда и есть приличный шанс грязи'),
+                                            (4, 1, 'concrete', 'fairly smooth but can have cracks'),
+                                            (4, 2, 'бетон', 'сравнительно ровная поверхность, возможны трещины'),
+                                            (5, 1, 'grass', 'grass?'),
+                                            (5, 2, 'трава', 'трава?'),
+                                            (6, 1, 'gravel', 'losts of tiny stones, small wheels are not advised'),
+                                            (6, 2, 'гравий', 'мелкие камни, с маленькими колесами делать нечего'),
+                                            (7, 1, 'stone slabs', 'fairly smooth but cracks happen regulary'),
+                                            (7, 2, 'каменные плиты', 'довольно ровно, но с регулярными трещинами'),
+                                            (8, 1, 'tiles', 'small beveled tiles, cracks are imminent, really uncomfortable for small wheels'),
+                                            (8, 2, 'плитка', 'мелкая неровная плитка, постоянные грани, дискофортно для маленький колес'),
+                                            (9, 1, 'sand', 'small and medium wheels have no chance but wide may have a chance'),
+                                            (9, 2, 'песок', 'маленьким и средним колесам делать тут нечего, хотя у широких есть шанс'),
+                                            (10, 1, 'stairway', 'you are gonna carry that weight'),
+                                            (10, 2, 'лестница', 'несем этот груз');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>def. pavement translation inserted<br>";
     } else {
@@ -57,12 +73,12 @@ function upload_base_data($connection) {
                         (4, 1, 'uncomfortable'),
                         (5, 1, 'good with minor irritation'),
                         (6, 1, 'good'),
-                        (1, 1, 'ехать невозможно'),
-                        (2, 1, 'ехать можно, но рискованно'),
-                        (3, 1, 'ехать очень неприятно'),
-                        (4, 1, 'ехать неприятно'),
-                        (5, 1, 'хорошо, но с мелкими раздражающими факторами'),
-                        (6, 1, 'хорошо');";
+                        (1, 2, 'ехать невозможно'),
+                        (2, 2, 'ехать можно, но рискованно'),
+                        (3, 2, 'ехать очень неприятно'),
+                        (4, 2, 'ехать неприятно'),
+                        (5, 2, 'хорошо, но с мелкими раздражающими факторами'),
+                        (6, 2, 'хорошо');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>quality translations inserted<br>";
     } else {
