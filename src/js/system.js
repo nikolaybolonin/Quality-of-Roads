@@ -62,243 +62,10 @@ function ajaxGet(
 
 
 
-
-
-
-
-
-
-
-
-
 // ========================================================================
 //  PAGE INITIALIZATION - INITIALIZATION
 // ========================================================================
 
-var jsonGeoData = {
-  "type": "FeatureCollection",
-  "features": [{
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355632305145264, 59.943875],
-          [30.355321168899536, 59.94388]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355632305145264, 59.943875],
-          [30.355637669563293, 59.94404075366086]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355331, 59.94404478377827],
-          [30.355321168899536, 59.94388]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "id": 1111,
-      "surface": "paved",
-      "width": 2.5,
-      "populousness": 3,
-      "quality": 5,
-      "rating": 3,
-      "color": "greenyellow",
-      "descendants": "1234, 1235, 4231"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355632305145264, 59.943875],
-          [30.355605483055115, 59.94312187410796]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355305075645447, 59.943279052679095],
-          [30.35562962293625, 59.94327770927567]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355305075645447, 59.943279052679095],
-          [30.35529300570488, 59.943158146152065]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "5",
-      "color": "greenyellow"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355288982391357, 59.94308291520162],
-          [30.35559743642807, 59.94308022837879]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "id": 1111,
-      "surface": "paved",
-      "width": 2.5,
-      "populousness": 3,
-      "quality": 2,
-      "rating": 3,
-      "color": "red",
-      "descendants": "1234, 1235, 4231"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35529300570488, 59.943158146152065],
-          [30.35483568906784, 59.94316687830489]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "2",
-      "color": "red"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35529300570488, 59.943158146152065],
-          [30.355283617973328, 59.94294454354344]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "2",
-      "color": "red"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35474583506584, 59.94388895221593],
-          [30.35532519221306, 59.94387753349507]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "2",
-      "color": "red"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.355614870786667, 59.943243452469716],
-          [30.357611775398254, 59.94320113518995]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "6",
-      "color": "limegreen"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35559743642807, 59.94312590433706],
-          [30.35757690668106, 59.94308022837879]
-        ]
-      ]
-    }
-  }, {
-    "type": "Feature",
-    "properties": {
-      "name": "footway",
-      "quality": "6",
-      "color": "limegreen"
-    },
-    "geometry": {
-      "type": "MultiLineString",
-      "coordinates": [
-        [ // Реально значимы первые 6-7 знаков после точки
-          [30.35559743642807, 59.94312590433706],
-          [30.355589389801025, 59.94292842253599]
-        ]
-      ]
-    }
-  }]
-};
 
 // Параметры начальной точки
 var lat = 59.94357081225065;
@@ -320,8 +87,8 @@ function getLineDescrText(event) {
     if (event.feature.getProperty('id') != undefined) {
       lineOptionsText = lineOptionsText + 'ID: ' + event.feature.getProperty('id') + '</br>'
     }
-    if (event.feature.getProperty('surface') != undefined) {
-      lineOptionsText = lineOptionsText + 'Surface: ' + event.feature.getProperty('surface') + '</br>'
+    if (event.feature.getProperty('pavement_type') != undefined) {
+      lineOptionsText = lineOptionsText + 'Surface: ' + event.feature.getProperty('pavement_type') + '</br>'
     }
     if (event.feature.getProperty('width') != undefined) {
       lineOptionsText = lineOptionsText + 'Width: ' + event.feature.getProperty('width') + 'm</br>'
@@ -441,7 +208,7 @@ function googleMapInit() {
 
   // NOTE: This uses cross-domain XHR, and may not work on older browsers.
   // Use loadGeoJson to load it from file or URL 
-  GoogleMap.data.addGeoJson(jsonGeoData);
+  //GoogleMap.data.addGeoJson(jsonGeoData);
 
   // Добавляем инпут в который будут выводиться текущие параметры и координаты клика 
   var infoLabel = document.getElementById('map_current_parameters_label');
@@ -464,19 +231,6 @@ function googleMapInit() {
     lineOptions.innerHTML = '';
   });
 
-  /*
-  // Клик по кнопке go_to_coords
-  $(document).on('click keydown', '#meta_data_container', function(event) {
-
-    // Eсли нажал клавишу Enter или был клик мышкой
-    if ((event.keyCode == 13) ||
-      (event.keyCode = 'undefined' && (GoToCoordsButton.is(event.target) || !(GoToCoordsButton.has(event.target).length === 0)))) {
-
-      alert(infoLabel.value);
-
-    }
-  });
-  */
 
   var getDataButton = document.getElementById('meta_data_container');
   // Клик по кнопке go_to_coords

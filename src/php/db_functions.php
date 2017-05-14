@@ -551,7 +551,30 @@ function upload_basedata($connection, $json){
                 }
             }
             
-            echo "<br>";
+            if (array_key_exists('highway', $element_tags)) {
+                $way_type = $element_tags['highway'];
+                
+                switch ($way_type) {
+                    case 'steps':
+                        $pavement_type_id = 10;
+                        $quality_value = 1;
+                        break;
+                }
+            }
+            
+            if (array_key_exists('escalator', $element_tags)) {
+                continue;
+            }
+            
+            if (array_key_exists('public_transport', $element_tags)) {
+                continue;
+            }
+            
+            if (array_key_exists('railway', $element_tags)) {
+                continue;
+            }
+            
+            //echo "<br>";
             for ($i = 0; $i < count($nodes_arr); ++$i) {
                 $node_osm_id = (string)$nodes_arr[$i];
                 $node_id = $node_ids_for_osm_parents[$node_osm_id];
@@ -582,6 +605,7 @@ function upload_basedata($connection, $json){
                     if ($q_len > 1000) {
                         $sql_ib = rtrim($sql_ib, ", ");
                         if ($connection->query($sql_ib) === TRUE) {
+                            echo "<br>";
                             echo "base lines inserted";
                         } else {
                             echo "Error: " . $sql . "<br>" . $connection->error;
@@ -618,26 +642,6 @@ function upload_basedata($connection, $json){
         echo "<br>";
     }
     
-    //TODO:gotta understand why this does not work
-    /*
-    $sql_iq =  "UPDATE QLines AS ql
-                LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
-                SET ql.qline_start_node_id = bl.bline_start_node_id,
-                    ql.qline_end_node_id = bl.bline_end_node_id,
-                    ql.pavement_type_id = bl.pavement_type_id,
-                    ql.surface_quality = bl.quality_value,
-                    ql.width = bl.width,";
-
-
-    if ($connection->query($sql_iq) === TRUE) {
-        echo "qlines nodes copied from blines";
-    } else {
-        echo "Error: " . $sql . "<br>" . $connection->error;
-        echo "<br>";
-        echo $sql_iq;
-        echo "<br>";
-    }
-    */
     
     $sql_iq =  "UPDATE QLines AS ql
                 LEFT JOIN BaseLines AS bl ON ql.parent_line_id = bl.bline_id 
@@ -649,6 +653,7 @@ function upload_basedata($connection, $json){
 
 
     if ($connection->query($sql_iq) === TRUE) {
+        echo "<br>";
         echo "qlines nodes copied from blines";
     } else {
         echo "Error: " . $sql . "<br>" . $connection->error;
@@ -665,6 +670,7 @@ function upload_basedata($connection, $json){
                     DROP COLUMN width";
     
     if ($connection->query($sql_delc) === TRUE) {
+        echo "<br>";
         echo "columns dropped";
     } else {
         echo "Error: " . $sql . "<br>" . $connection->error;
