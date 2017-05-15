@@ -35,8 +35,8 @@ function upload_base_data($connection) {
                                             (4, 2, 'бетон', 'сравнительно ровная поверхность, возможны трещины'),
                                             (5, 1, 'grass', 'grass?'),
                                             (5, 2, 'трава', 'трава?'),
-                                            (6, 1, 'gravel', 'losts of tiny stones, small wheels are not advised'),
-                                            (6, 2, 'гравий', 'мелкие камни, с маленькими колесами делать нечего'),
+                                            (6, 1, 'fine gravel', 'lots of tiny stones, small wheels are not advised'),
+                                            (6, 2, 'гравий', 'крошечные камни, с маленькими колесами делать нечего'),
                                             (7, 1, 'stone slabs', 'fairly smooth but cracks happen regulary'),
                                             (7, 2, 'каменные плиты', 'довольно ровно, но с регулярными трещинами'),
                                             (8, 1, 'tiles', 'small beveled tiles, cracks are imminent, really uncomfortable for small wheels'),
@@ -44,7 +44,9 @@ function upload_base_data($connection) {
                                             (9, 1, 'sand', 'small and medium wheels have no chance but wide may have a chance'),
                                             (9, 2, 'песок', 'маленьким и средним колесам делать тут нечего, хотя у широких есть шанс'),
                                             (10, 1, 'stairway', 'you are gonna carry that weight'),
-                                            (10, 2, 'лестница', 'несем этот груз');";
+                                            (10, 2, 'лестница', 'несем этот груз'),
+                                            (11, 1, 'gravel', 'lots of small stones, medium wheels are not advised'),
+                                            (11, 2, 'щебень', 'небольшие камни, со средними колесами будут проблемы');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>def. pavement translation inserted<br>";
     } else {

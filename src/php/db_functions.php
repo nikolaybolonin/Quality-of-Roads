@@ -510,12 +510,23 @@ function upload_basedata($connection, $json){
                         break;
                     case 'cobblestone':
                         $pavement_type_id = 2;
+                        $quality_value = 2;
+                        break;
+                    case 'cobblestone:flattened':
+                        $pavement_type_id = 2;
+                        $quality_value = 2;
                         break;
                     case 'compacted':
                         $pavement_type_id = 3;
                         $quality_value = 1;
                         break;
                     case 'concrete':
+                        $pavement_type_id = 4;
+                        break;
+                    case 'concrete:lanes':
+                        $pavement_type_id = 4;
+                        break;
+                    case 'concrete:plates':
                         $pavement_type_id = 4;
                         break;
                     case 'dirt':
@@ -534,11 +545,11 @@ function upload_basedata($connection, $json){
                         $quality_value = 0;
                         break;
                     case 'gravel':
-                        $pavement_type_id = 6;
-                        $quality_value = 2;
+                        $pavement_type_id = 11;
+                        $quality_value = 1;
                         break;
                     case 'paving_stones':
-                        $pavement_type_id = 2;
+                        $pavement_type_id = 8;
                         break;
                     case 'pebblestone':
                         $pavement_type_id = 2;
