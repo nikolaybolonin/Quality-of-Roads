@@ -5,21 +5,6 @@
   Creation Date : 01 Dec 2016
 */
 
-/*
-  Table of Contents : 
-      
-      25    --- Промис для XMLHttpRequest
-      67    --- Visualize Data (конструктор)
-      155   --- PAGE INITIALIZATION - INITIALIZATION
-      184   --- PAGE INITIALIZATION - FUNCTIONS
-
-*/
-
-
-
-
-
-
 
 'use strict';
 
@@ -29,7 +14,7 @@
 function ajaxGet(
   // Дефолтные значения необязательных параметров
   {
-    url:        url       ='ajax.php', 
+    url:        url       ='get_json.php', 
     request:    request   ='200', 
     data:       data      =''
   } = {}) {
@@ -55,8 +40,11 @@ function ajaxGet(
 
     xhr.send();
   });
-
+  
 }
+
+
+
 
 
 
@@ -66,20 +54,29 @@ function ajaxGet(
 //  PAGE INITIALIZATION - INITIALIZATION
 // ========================================================================
 
+/*
+Center: (30.3409952, 59.9566569)
+*/
 
-// Параметры начальной точки
-var lat = 59.94357081225065;
-var lng = 30.356389311114533;
+//old center
+/*
+var lat = 59.9440020;
+var lng = 30.3553289;
 var zoom = 18;  
+*/
 
+var lat = 59.9536273;
+var lng = 30.3496856;
+var zoom = 18;
+   
 
 
 // ========================================================================
 //  PAGE INITIALIZATION - FUNCTIONS
 // ========================================================================
-
 function getLineDescrText(event) {
     var lineOptionsText = '';
+
 
     if (event.feature.getProperty('name') != undefined) {
       lineOptionsText = lineOptionsText + 'Name: ' + event.feature.getProperty('name') + '</br>'
@@ -111,8 +108,80 @@ function getLineDescrText(event) {
     return lineOptionsText;
 }
 
+function getLineEditorForm(event) {
+    var lineOptionsText = '<form>';
+	
+    lineOptionsText += 'ID(s): ';
+    if (event.feature.getProperty('id') != undefined) {
+      var clicked_id = event.feature.getProperty('id');
+      if (ids_array.includes(clicked_id)) {
+        var index = ids_array.indexOf(clicked_id);
+        ids_array.splice(index, 1);
+      } else {
+        ids_array.push(clicked_id);
+      }
+      var ids_string = ids_array.toString();
+    }
+    lineOptionsText += ids_string + '</br>';
+	
+	var surfaces_drop_string = '';
+	
+	var xmlhttp = new XMLHttpRequest();
+    
+    xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.status == 200) {
+            surfaces_drop_string = JSON.parse(xmlhttp.responseText)['drop'];
+        } else {
+			surfaces_drop_string = 'bbbb';
+		}
+    };
+    
+    var url = 'php/menu_selection_helper.php';
+	var ids_string = ids_array.toString();
+    xmlhttp.open("GET", url + '?r=' + Math.random() + '&request=' + 'surfaces_drop' + '&ids=' + ids_string + '&language=en', false);
+    xmlhttp.send();
+	
+	lineOptionsText += 'Surface:';
+	lineOptionsText += surfaces_drop_string;
+	lineOptionsText += '<br>';
+
+	var xmlhttp = new XMLHttpRequest();
+	var surface_qs = '';
+    
+    xmlhttp.onreadystatechange = function() {
+        //if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+		if (xmlhttp.status == 200) {
+            //var additional_data = String(xmlhttp.responseText);
+            surface_qs = String(JSON.parse(xmlhttp.responseText)['quality']);
+        }
+    };
+	
+	var url = 'php/menu_selection_helper.php';
+	
+	var ids_string = ids_array.toString();
+    xmlhttp.open("GET", url + '?r=' + Math.random() + '&request=' + 'quality_value' + '&ids=' + ids_string, false);
+
+    xmlhttp.send();
+	
+    lineOptionsText += 'Surface Quality: <input type="number" id="quality_number" name="quality" min="0" max="5" step="1" value="';
+	lineOptionsText += surface_qs.replace(/(\r\n|\n|\r)/gm,"");
+	lineOptionsText += '"><br>';
+	
+    if (event.feature.getProperty('width') != undefined) {
+      lineOptionsText += 'Width: ' + event.feature.getProperty('width') + 'm</br>'
+    }
+    if (event.feature.getProperty('populousness') != undefined) {
+      lineOptionsText += 'Populousness: ' + event.feature.getProperty('populousness') + '</br>'
+    }
+    
+    return lineOptionsText;
+}
+var ids_array = [];
+var lprop_quality;
+var lprop_surface;
 // Создаем карту с API Google Maps (googleMapInit вызывается из HTML)
 function googleMapInit() {
+  //var ids_array = [];
   var googleMapLatLng = new google.maps.LatLng(lat, lng);
   var GoogleMap = new google.maps.Map(document.getElementById('map_with_google_api'), {
     center: googleMapLatLng,
@@ -208,7 +277,7 @@ function googleMapInit() {
 
   // NOTE: This uses cross-domain XHR, and may not work on older browsers.
   // Use loadGeoJson to load it from file or URL 
-  //GoogleMap.data.addGeoJson(jsonGeoData);
+  //GoogleMap.data.addGeoJson(jsonGeoData3);
 
   // Добавляем инпут в который будут выводиться текущие параметры и координаты клика 
   var infoLabel = document.getElementById('map_current_parameters_label');
@@ -234,7 +303,13 @@ function googleMapInit() {
 
   var getDataButton = document.getElementById('meta_data_container');
   // Клик по кнопке go_to_coords
-  getDataButton.addEventListener("click", function(event) {
+  //getDataButton.addEventListener("click", function(event) {
+  var goToCoords = document.getElementById('go_to_coords');
+  var updateLinesButton = document.getElementById('update_lines');
+  var breakLineButton = document.getElementById('break_line');
+  var joinLinesButton = document.getElementById('join_lines');
+  
+  goToCoords.addEventListener("click", function(event) {
 
     var gBounds = GoogleMap.getBounds();
     var bounds = {
@@ -247,11 +322,11 @@ function googleMapInit() {
         lat: gBounds.f.f
       }
     }
-
+    
     ajaxGet({
-      url: 'php/ajax.php',
+      url: 'php/get_json.php',
       request: 'select_geojson',
-      data: '&nwlng=' + bounds.nw.lng + '&nwlat=' + bounds.nw.lat + '&selng=' + bounds.se.lng + '&selat=' + bounds.se.lat
+      data: '&nwlat=' + bounds.nw.lat + '&nwlng=' + bounds.nw.lng + '&selat=' + bounds.se.lat + '&selng=' + bounds.se.lng
     })
       // 1. Распарсить JSON или вывести ошибку
       .then(
@@ -275,6 +350,52 @@ function googleMapInit() {
           // NOTE: This uses cross-domain XHR, and may not work on older browsers.
           // Use loadGeoJson to load it from file or URL 
           GoogleMap.data.addGeoJson(data['data']['geojson']);
+        } else {
+          console.error(data['info']);
+        }
+      });
+ 
+    event.preventDefault();
+
+  }, false); // Конец addEventListener
+  
+    updateLinesButton.addEventListener("click", function(event) {
+    
+    var surface_drop = document.getElementById('surface_drop');
+    var quality_input = document.getElementById('quality_number');
+    
+    var ids_string = ids_array.toString();
+    var quality_value = quality_input.value;
+    var surface_value = surface_drop.options[surface_drop.selectedIndex].value;
+	var a = 'stop';
+    
+    ajaxGet({
+      url: 'php/update_db.php',
+      request: 'update_lines',
+      data: '&ids=' + ids_string + '&quality=' + quality_value + '&surface=' + surface_value
+    })
+      // 1. Распарсить JSON или вывести ошибку
+      .then(
+        response => {
+          console.info('Fulfilled');
+
+          let data = JSON.parse(response);
+          return data;
+        },
+        error => {
+          console.error('Rejected: ' + response);
+          return false;
+        }
+      )
+      // 2. Распарсить объект в массив + преобразовать строки Y в числа
+      .then(data => {
+
+        if (!!data['result']) {
+
+          console.log(data['data']);
+          // NOTE: This uses cross-domain XHR, and may not work on older browsers.
+          // Use loadGeoJson to load it from file or URL 
+          // GoogleMap.data.addGeoJson(data['data']['geojson']);
 
 
         } else {
@@ -285,10 +406,45 @@ function googleMapInit() {
 
     event.preventDefault();
 
-  }, false); // Конец addEventListener
+  }, false);
+  
+  breakLineButton.addEventListener("click", function(event) {
+	  var percent_input = document.getElementById('break_percent');
+	  var percent_value = percent_input.value;
+	  
+	  var xmlhttp = new XMLHttpRequest();
+	  
+	  //var resp = '';
+    
+	  xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.status == 200) {
+        }
+      };
+	
+	var url = 'php/update_db.php';
+	
+	var ids_string = ids_array.toString();
+    xmlhttp.open("GET", url + '?r=' + Math.random() + '&request=' + 'break_qline' + '&id=' + ids_string + '&percent=' + percent_value, false);
+    xmlhttp.send();
+	
+  }, false);
+  
+  joinLinesButton.addEventListener("click", function(event) {
+	  
+	  var xmlhttp = new XMLHttpRequest();
+	  xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.status == 200) {
+        }
+      };
+	
+	var url = 'php/update_db.php';
+	
+	var ids_string = ids_array.toString();
+    xmlhttp.open("GET", url + '?r=' + Math.random() + '&request=' + 'join_qlines' + '&ids=' + ids_string, false);
 
-
-
+    xmlhttp.send();
+	
+  }, false);
 
   // Функция применяющая стили по триггеру isColorful
   GoogleMap.data.setStyle(function(feature) {
@@ -361,11 +517,12 @@ function googleMapInit() {
 
   // По клику выводим инфу на лейбл сбоку.
   GoogleMap.data.addListener('click', function(event) {
+  
 
-    //var lineOptionsText = '';
-    var lineDescr2 = '';
-    lineDescr2 = getLineDescrText(event);
-    lineOptions.innerHTML = lineDescr2;
+    var lineEdit2 = '';
+    lineEdit2 = getLineEditorForm(event);
+
+	lineOptions.innerHTML = lineEdit2;
 
   });
 
