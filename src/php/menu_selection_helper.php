@@ -11,8 +11,8 @@ function surfaces_dropdown($ids, $lang) {
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     
     if (!$connection) {
-        $answer_from_server['result'] = false;
-        $answer_from_server['info'] = 'Ошибка соединения: ' . mysql_error();
+        $answer_from_server['result'] = 'error';
+        $answer_from_server['info'] = 'connection fail: ' . mysql_error();
     }
     
     //first to get lang id
@@ -27,7 +27,6 @@ function surfaces_dropdown($ids, $lang) {
             $lang_id = $row["language_id"];
         }
     }
-    //echo $lang_id;
     
     // now to get all the options for pavement surface and making
     // dropdown list with nothing selected
@@ -56,10 +55,13 @@ function surfaces_dropdown($ids, $lang) {
     if(($ids != null) && ($res_surfaces->num_rows == 1)) {
         while($row = $res_surfaces->fetch_assoc()) {
             $selected_pavement_type_id = $row["pavement_type_id"];
+			$answer_from_server['info'] = 'only one quality value is present';
         }
     } else {
+        $answer_from_server['info'] = 'several quality values are present';
         $selected_pavement_type_id = -1;
     }
+	$answer_from_server['result'] = 'success';
     
     $str_to_replace = '"' . $selected_pavement_type_id . '">';
     $replacement = '"' . $selected_pavement_type_id . '" selected>';
@@ -86,10 +88,13 @@ function quality_value($ids=null) {
     if($res_uniq_qs->num_rows == 1) {
         while($row = $res_uniq_qs->fetch_assoc()) {
             $selected_qs = $row["surface_quality"];
+			$answer_from_server['info'] = 'only one quality value is present';
         }
     } else {
+		$answer_from_server['info'] = 'several quality values are present';
         $selected_qs = '';
     }
+	$answer_from_server['result'] = 'success';
     return $selected_qs;
 }
 
@@ -102,20 +107,20 @@ switch ($global_request_name) {
         if (isset($_REQUEST["language"])) $lang = htmlspecialchars(stripslashes(trim($_REQUEST["language"])));
 		
 		if ($lang == null) {
-			$answer_from_server['result'] = false;
+			$answer_from_server['result'] = 'fail';
 			$answer_from_server['info'] = 'no language';
 			break;
 		}
 		if ($ids_list == null) {
 			$surface_drop = surfaces_dropdown(null, $lang);
-			$answer_from_server['result'] = true;
+			$answer_from_server['result'] = 'fail';
 			$answer_from_server['info'] = 'no selection';
 			$answer_from_server['quality'] = $surface_drop;
 			break;
 		}
         
-        $answer_from_server['result'] = true;
-		$answer_from_server['info'] = 'got surfaces drop';
+        //$answer_from_server['result'] = true;
+		//$answer_from_server['info'] = 'got surfaces drop';
         $surface_drop = surfaces_dropdown($ids_list, $lang);
 		$answer_from_server['drop'] = $surface_drop;
         
@@ -126,21 +131,21 @@ switch ($global_request_name) {
 		if (isset($_REQUEST["ids"])) {
 			$ids_list = htmlspecialchars(stripslashes(trim($_REQUEST["ids"])));
 			if ($ids_list == null) {
-				$answer_from_server['result'] = true;
+				$answer_from_server['result'] = 'fail';
 				$answer_from_server['info'] = 'no selection - empty quality';
 				$answer_from_server['quality'] = '';
 				break;
 			}
 			$qs = quality_value($ids_list);
 			
-			$answer_from_server['result'] = true;
-			$answer_from_server['info'] = 'got quality value';
+			//$answer_from_server['result'] = true;
+			//$answer_from_server['info'] = 'got quality value';
 			$answer_from_server['quality'] = $qs;
 			break;
 		}
     default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
-		$answer_from_server['result'] = false;
+		$answer_from_server['result'] = 'fail';
 		$answer_from_server['info'] = 'Incorrect request name';
 		break;
 } /* Конец switch case */

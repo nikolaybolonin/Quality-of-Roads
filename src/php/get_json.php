@@ -12,7 +12,7 @@ function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
     
     if (!$connection) {
         $answer_from_server['result'] = false;
-        $answer_from_server['info'] = 'Ошибка соединения: ' . mysql_error();
+        $answer_from_server['info'] = 'connection fail: ' . mysql_error();
     }
     
     if ($lat_one > $lat_two) {
@@ -93,12 +93,14 @@ function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
                             "geometry"    => $geometry);
 
             $geodata_arr = array("type" => "FeatureCollection", "features" => $rows);
-            //echo $geodata_arr;
-            //var_dump($geodata_arr);
+			
+			$answer_from_server['result'] = 'success';
+			$answer_from_server['info'] = 'created geojson';
         }
     } else {
+		$answer_from_server['result'] = 'fail';
+		$answer_from_server['info'] = 'no data - empty area';
         $geodata_arr = false;
-        //echo "0 results";
     }
 
     $geodata_json = json_encode($geodata_arr);
@@ -135,34 +137,6 @@ function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
     //return $geodata_json;
 }
 
-function update_db($ids_list, $quality, $surface_type) {
-
-    require_once('passwords.php');
-
-    $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
-    
-    if (!$connection) {
-        $answer_from_server['result'] = false;
-        $answer_from_server['info'] = 'Ошибка соединения: ' . mysql_error();
-    }
-	
-	$upd_string = '';
-	
-	if ($quality>=0 && $quality<=5) {
-		$upd_string .= "surface_quality = $quality";
-	}
-	
-	if ($surface_type != '-1') {
-		$upd_string .= ", pavement_type_id = $surface_type";
-	}
-	
-    $sql_q = "UPDATE qlines
-            SET $upd_string
-            WHERE qline_id in ($ids_list)";
-
-    $res = $connection->query($sql_q);
-}
-
 if (isset($_REQUEST["request"])) $global_request_name = htmlspecialchars(stripslashes(trim($_REQUEST["request"])));
 
 switch ($global_request_name) {
@@ -177,12 +151,12 @@ switch ($global_request_name) {
         $jsonGeoData_arr = create_json($nwlat, $nwlng, $selat, $selng);
         
         if ($jsonGeoData_arr != false){
-			$answer_from_server['result'] = true;
+			$answer_from_server['result'] = 'success';
 			$answer_from_server['data']['geojson'] = $jsonGeoData_arr;
 			//$answer_from_server['data']['bounds'] = $bounds;
 		}
 		if (!isset($answer_from_server['data'])) {
-			$answer_from_server['result'] = false;
+			$answer_from_server['result'] = 'fail';
 			$answer_from_server['data'] = false;
 		}
         break;
@@ -191,19 +165,9 @@ switch ($global_request_name) {
         
         break;
 
-	case 'update_db':
-        if (isset($_REQUEST["ids"])) $ids_list = htmlspecialchars(stripslashes(trim($_REQUEST["ids"])));
-        if (isset($_REQUEST["quality"])) $quality = htmlspecialchars(stripslashes(trim($_REQUEST["quality"])));
-        if (isset($_REQUEST["surface"])) $surface = htmlspecialchars(stripslashes(trim($_REQUEST["surface"])));
-        
-        $answer_from_server['result'] = true;
-		$answer_from_server['info'] = 'DB updated';
-        $jsonGeoData_arr = update_db($ids_list, $quality, $surface);
-        break;
-
     default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
-		$answer_from_server['result'] = false;
+		$answer_from_server['result'] = 'fail';
 		$answer_from_server['info'] = 'Incorrect request name';
 		break;
 } /* Конец switch case */

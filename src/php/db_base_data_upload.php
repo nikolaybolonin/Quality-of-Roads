@@ -1,10 +1,7 @@
 <?php
-
 // Half-assed function to get some basic data in for future testing. TODO: get some proper basic data upload functionality)
 function upload_base_data($connection) {
-
     echo "<br>== Inserting base data ==<br>";
-
     echo "<br>pavement<br>";
     $sql_i = "INSERT INTO pavement (pavement_id) VALUES (1), (2);";
     if ($connection->query($sql_i) === TRUE) {
@@ -12,47 +9,42 @@ function upload_base_data($connection) {
     } else {
         echo "error creating table: " . $connection->error;
     }
-
     echo "<br>Languages<br>";
     $sql_i = "INSERT INTO languages (language_en_short_name, language_en_name, language_local_name)
                                     VALUES ('EN', 'English', 'English'),
-                                            ('RU', 'Russian', 'Ðóññêèé');";
+                                            ('RU', 'Russian', 'ÃÃ³Ã±Ã±ÃªÃ¨Ã©');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>languages inserted<br>";
     } else {
         echo "error creating table: " . $connection->error;
     }
-
     echo "<br>pavement translation<br>";
     $sql_i = "INSERT INTO pavement_translation (pavement_id, language_id, pavement_name, pavement_descr)
                                     VALUES (1, 1, 'asphalt', 'fairly smooth but can have cracks and may include gravel'),
-                                            (1, 2, 'àñôàëüò', 'ñðàâíèòåëüíî ðîâíàÿ ïîâåðõíîñòü, âîçìîæíû òðåùèíû è ìîæåò âêëþ÷àòü â ñåáÿ ãðàâèé'),
+                                            (1, 2, 'Ã Ã±Ã´Ã Ã«Ã¼Ã²', 'Ã±Ã°Ã Ã¢Ã­Ã¨Ã²Ã¥Ã«Ã¼Ã­Ã® Ã°Ã®Ã¢Ã­Ã Ã¿ Ã¯Ã®Ã¢Ã¥Ã°ÃµÃ­Ã®Ã±Ã²Ã¼, Ã¢Ã®Ã§Ã¬Ã®Ã¦Ã­Ã» Ã²Ã°Ã¥Ã¹Ã¨Ã­Ã» Ã¨ Ã¬Ã®Ã¦Ã¥Ã² Ã¢ÃªÃ«Ã¾Ã·Ã Ã²Ã¼ Ã¢ Ã±Ã¥Ã¡Ã¿ Ã£Ã°Ã Ã¢Ã¨Ã©'),
                                             (2, 1, 'cobblestone', 'uneven stones, layed together - cracks are imminent, uncomfortable even for medium wheels'),
-                                            (2, 2, 'áðóñ÷àòêà', 'íåðîâíûé áóëûæíèê, ïîñòîÿííûå ãðàíè, äèñêîôîðòíî äàæå äëÿ ñðåäêíèõ êîëåñ'),
+                                            (2, 2, 'Ã¡Ã°Ã³Ã±Ã·Ã Ã²ÃªÃ ', 'Ã­Ã¥Ã°Ã®Ã¢Ã­Ã»Ã© Ã¡Ã³Ã«Ã»Ã¦Ã­Ã¨Ãª, Ã¯Ã®Ã±Ã²Ã®Ã¿Ã­Ã­Ã»Ã¥ Ã£Ã°Ã Ã­Ã¨, Ã¤Ã¨Ã±ÃªÃ®Ã´Ã®Ã°Ã²Ã­Ã® Ã¤Ã Ã¦Ã¥ Ã¤Ã«Ã¿ Ã±Ã°Ã¥Ã¤ÃªÃ­Ã¨Ãµ ÃªÃ®Ã«Ã¥Ã±'),
                                             (3, 1, 'compacted earth', 'there is a chance of it being smooth but a good chance of dirt'),
-                                            (3, 2, 'óòîïòàííàÿ çåìëÿ', 'ìîæåò áûòü ðîâíîé, íî íå âñåãäà è åñòü ïðèëè÷íûé øàíñ ãðÿçè'),
+                                            (3, 2, 'Ã³Ã²Ã®Ã¯Ã²Ã Ã­Ã­Ã Ã¿ Ã§Ã¥Ã¬Ã«Ã¿', 'Ã¬Ã®Ã¦Ã¥Ã² Ã¡Ã»Ã²Ã¼ Ã°Ã®Ã¢Ã­Ã®Ã©, Ã­Ã® Ã­Ã¥ Ã¢Ã±Ã¥Ã£Ã¤Ã  Ã¨ Ã¥Ã±Ã²Ã¼ Ã¯Ã°Ã¨Ã«Ã¨Ã·Ã­Ã»Ã© Ã¸Ã Ã­Ã± Ã£Ã°Ã¿Ã§Ã¨'),
                                             (4, 1, 'concrete', 'fairly smooth but can have cracks'),
-                                            (4, 2, 'áåòîí', 'ñðàâíèòåëüíî ðîâíàÿ ïîâåðõíîñòü, âîçìîæíû òðåùèíû'),
+                                            (4, 2, 'Ã¡Ã¥Ã²Ã®Ã­', 'Ã±Ã°Ã Ã¢Ã­Ã¨Ã²Ã¥Ã«Ã¼Ã­Ã® Ã°Ã®Ã¢Ã­Ã Ã¿ Ã¯Ã®Ã¢Ã¥Ã°ÃµÃ­Ã®Ã±Ã²Ã¼, Ã¢Ã®Ã§Ã¬Ã®Ã¦Ã­Ã» Ã²Ã°Ã¥Ã¹Ã¨Ã­Ã»'),
                                             (5, 1, 'grass', 'grass?'),
-                                            (5, 2, 'òðàâà', 'òðàâà?'),
-                                            (6, 1, 'fine gravel', 'lots of tiny stones, small wheels are not advised'),
-                                            (6, 2, 'ãðàâèé', 'êðîøå÷íûå êàìíè, ñ ìàëåíüêèìè êîëåñàìè äåëàòü íå÷åãî'),
+                                            (5, 2, 'Ã²Ã°Ã Ã¢Ã ', 'Ã²Ã°Ã Ã¢Ã ?'),
+                                            (6, 1, 'gravel', 'losts of tiny stones, small wheels are not advised'),
+                                            (6, 2, 'Ã£Ã°Ã Ã¢Ã¨Ã©', 'Ã¬Ã¥Ã«ÃªÃ¨Ã¥ ÃªÃ Ã¬Ã­Ã¨, Ã± Ã¬Ã Ã«Ã¥Ã­Ã¼ÃªÃ¨Ã¬Ã¨ ÃªÃ®Ã«Ã¥Ã±Ã Ã¬Ã¨ Ã¤Ã¥Ã«Ã Ã²Ã¼ Ã­Ã¥Ã·Ã¥Ã£Ã®'),
                                             (7, 1, 'stone slabs', 'fairly smooth but cracks happen regulary'),
-                                            (7, 2, 'êàìåííûå ïëèòû', 'äîâîëüíî ðîâíî, íî ñ ðåãóëÿðíûìè òðåùèíàìè'),
+                                            (7, 2, 'ÃªÃ Ã¬Ã¥Ã­Ã­Ã»Ã¥ Ã¯Ã«Ã¨Ã²Ã»', 'Ã¤Ã®Ã¢Ã®Ã«Ã¼Ã­Ã® Ã°Ã®Ã¢Ã­Ã®, Ã­Ã® Ã± Ã°Ã¥Ã£Ã³Ã«Ã¿Ã°Ã­Ã»Ã¬Ã¨ Ã²Ã°Ã¥Ã¹Ã¨Ã­Ã Ã¬Ã¨'),
                                             (8, 1, 'tiles', 'small beveled tiles, cracks are imminent, really uncomfortable for small wheels'),
-                                            (8, 2, 'ïëèòêà', 'ìåëêàÿ íåðîâíàÿ ïëèòêà, ïîñòîÿííûå ãðàíè, äèñêîôîðòíî äëÿ ìàëåíüêèé êîëåñ'),
+                                            (8, 2, 'Ã¯Ã«Ã¨Ã²ÃªÃ ', 'Ã¬Ã¥Ã«ÃªÃ Ã¿ Ã­Ã¥Ã°Ã®Ã¢Ã­Ã Ã¿ Ã¯Ã«Ã¨Ã²ÃªÃ , Ã¯Ã®Ã±Ã²Ã®Ã¿Ã­Ã­Ã»Ã¥ Ã£Ã°Ã Ã­Ã¨, Ã¤Ã¨Ã±ÃªÃ®Ã´Ã®Ã°Ã²Ã­Ã® Ã¤Ã«Ã¿ Ã¬Ã Ã«Ã¥Ã­Ã¼ÃªÃ¨Ã© ÃªÃ®Ã«Ã¥Ã±'),
                                             (9, 1, 'sand', 'small and medium wheels have no chance but wide may have a chance'),
-                                            (9, 2, 'ïåñîê', 'ìàëåíüêèì è ñðåäíèì êîëåñàì äåëàòü òóò íå÷åãî, õîòÿ ó øèðîêèõ åñòü øàíñ'),
+                                            (9, 2, 'Ã¯Ã¥Ã±Ã®Ãª', 'Ã¬Ã Ã«Ã¥Ã­Ã¼ÃªÃ¨Ã¬ Ã¨ Ã±Ã°Ã¥Ã¤Ã­Ã¨Ã¬ ÃªÃ®Ã«Ã¥Ã±Ã Ã¬ Ã¤Ã¥Ã«Ã Ã²Ã¼ Ã²Ã³Ã² Ã­Ã¥Ã·Ã¥Ã£Ã®, ÃµÃ®Ã²Ã¿ Ã³ Ã¸Ã¨Ã°Ã®ÃªÃ¨Ãµ Ã¥Ã±Ã²Ã¼ Ã¸Ã Ã­Ã±'),
                                             (10, 1, 'stairway', 'you are gonna carry that weight'),
-                                            (10, 2, 'ëåñòíèöà', 'íåñåì ýòîò ãðóç'),
-                                            (11, 1, 'gravel', 'lots of small stones, medium wheels are not advised'),
-                                            (11, 2, 'ùåáåíü', 'íåáîëüøèå êàìíè, ñî ñðåäíèìè êîëåñàìè áóäóò ïðîáëåìû');";
+                                            (10, 2, 'Ã«Ã¥Ã±Ã²Ã­Ã¨Ã¶Ã ', 'Ã­Ã¥Ã±Ã¥Ã¬ Ã½Ã²Ã®Ã² Ã£Ã°Ã³Ã§');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>def. pavement translation inserted<br>";
     } else {
         echo "error creating table: " . $connection->error;
     }
-
     echo "<br>quality<br>";
     $sql_i = "INSERT INTO quality (quality_value, quality_color_hex)
                 VALUES (0, '000000'),
@@ -66,7 +58,6 @@ function upload_base_data($connection) {
     } else {
         echo "error creating table: " . $connection->error;
     }
-
     echo "<br>quality translation<br>";
     $sql_i = "INSERT INTO quality_translation (quality_id, language_id, quality_descr)
                 VALUES (1, 1, 'impossible to ride'),
@@ -75,17 +66,16 @@ function upload_base_data($connection) {
                         (4, 1, 'uncomfortable'),
                         (5, 1, 'good with minor irritation'),
                         (6, 1, 'good'),
-                        (1, 2, 'åõàòü íåâîçìîæíî'),
-                        (2, 2, 'åõàòü ìîæíî, íî ðèñêîâàííî'),
-                        (3, 2, 'åõàòü î÷åíü íåïðèÿòíî'),
-                        (4, 2, 'åõàòü íåïðèÿòíî'),
-                        (5, 2, 'õîðîøî, íî ñ ìåëêèìè ðàçäðàæàþùèìè ôàêòîðàìè'),
-                        (6, 2, 'õîðîøî');";
+                        (1, 2, 'Ã¥ÃµÃ Ã²Ã¼ Ã­Ã¥Ã¢Ã®Ã§Ã¬Ã®Ã¦Ã­Ã®'),
+                        (2, 2, 'Ã¥ÃµÃ Ã²Ã¼ Ã¬Ã®Ã¦Ã­Ã®, Ã­Ã® Ã°Ã¨Ã±ÃªÃ®Ã¢Ã Ã­Ã­Ã®'),
+                        (3, 2, 'Ã¥ÃµÃ Ã²Ã¼ Ã®Ã·Ã¥Ã­Ã¼ Ã­Ã¥Ã¯Ã°Ã¨Ã¿Ã²Ã­Ã®'),
+                        (4, 2, 'Ã¥ÃµÃ Ã²Ã¼ Ã­Ã¥Ã¯Ã°Ã¨Ã¿Ã²Ã­Ã®'),
+                        (5, 2, 'ÃµÃ®Ã°Ã®Ã¸Ã®, Ã­Ã® Ã± Ã¬Ã¥Ã«ÃªÃ¨Ã¬Ã¨ Ã°Ã Ã§Ã¤Ã°Ã Ã¦Ã Ã¾Ã¹Ã¨Ã¬Ã¨ Ã´Ã ÃªÃ²Ã®Ã°Ã Ã¬Ã¨'),
+                        (6, 2, 'ÃµÃ®Ã°Ã®Ã¸Ã®');";
     if ($connection->query($sql_i) === TRUE) {
         echo "<br>quality translations inserted<br>";
     } else {
         echo "error creating table: " . $connection->error;
     }
 }
-
 ?>

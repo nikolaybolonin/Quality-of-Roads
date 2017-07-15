@@ -12,8 +12,8 @@ function establish_connection() {
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     
     if (!$connection) {
-        $answer_from_server['result'] = false;
-        $answer_from_server['info'] = 'Ошибка соединения: ' . mysql_error();
+        $answer_from_server['result'] = 'error';
+        $answer_from_server['info'] = 'connection fail: ' . mysql_error();
     }
 	return $connection;
 }
@@ -61,8 +61,11 @@ function add_node($connection, $node_coords, $timestamp = NULL, $parent = NULL) 
 	$sql_i = $sql_i_ins . $sql_i_vals;
 	
     if ($connection->query($sql_i) === TRUE) {
+		$answer_from_server['result'] = 'success';
+		$answer_from_server['info'] = 'node added';
     } else {
-		//echo "Error: " . $sql_i . "<br>" . $connection->error;
+		$answer_from_server['result'] = 'error';
+		$answer_from_server['info'] = 'node addition fail - connection error: ' . $sql_d . "<br>" . mysql_error();
     }
 }
 
@@ -95,9 +98,11 @@ function find_or_add_node($connection, $node_coords, $timestamp = NULL, $parent 
 function delete_qline($connection, $qline_id) {
 	$sql_d = "DELETE FROM qlines WHERE qline_id = $qline_id";
 	if ($connection->query($sql_d) === TRUE) {
+		$answer_from_server['result'] = 'success';
+		$answer_from_server['info'] = 'qline removed';
     } else {
-        //echo "Error: " . $sql . "<br>" . $connection->error;
-		//return false;
+        $answer_from_server['result'] = 'error';
+		$answer_from_server['info'] = 'qline removal fail - connection error: ' . $sql_d . "<br>" . mysql_error();
     }
 	
 }
@@ -126,12 +131,11 @@ function add_qline($connection, $start_node_id, $end_node_id, $parent_line_id, $
 
     //TODO same as weith nodes - need to decide if I need to workaround timestamp and parent default values (ignoring them and writing NULLs is different)
     if ($connection->query($sql_i) === TRUE) {
-        //echo "New line record created successfully";
-		return true;
-		//echo 'qline inserted';
+        $answer_from_server['result'] = 'success';
+		$answer_from_server['info'] = 'qline added';
     } else {
-        //echo "Error: " . $sql . "<br>" . $connection->error;
-		return false;
+        $answer_from_server['result'] = 'error';
+		$answer_from_server['info'] = 'qline addition fail - connection error: ' . $sql_d . "<br>" . mysql_error();
     }
 }
 
@@ -157,9 +161,11 @@ function set_qline_property ($connection, $qline_id, $property, $property_value)
 
 	$res = $connection->query($sql_q);
     if($res->num_rows <= 0) {
-
+		$answer_from_server['result'] = 'success';
+		$answer_from_server['info'] = 'qline updated';
     } else {
-
+        $answer_from_server['result'] = 'error';
+		$answer_from_server['info'] = 'qline update fail - connection error: ' . $sql_d . "<br>" . mysql_error();
     }
 }
 
@@ -214,9 +220,11 @@ function delete_node_if_unused($connection, $node_id) {
 	if($res->num_rows < 1) {
 		$sql_d = "DELETE FROM Nodes WHERE node_id=$node_id";
 		if ($connection->query($sql_d) === TRUE) {
-			//echo "<br>anchor node removed<br>";
+			$answer_from_server['result'] = 'success';
+			$answer_from_server['info'] = 'node removed';
 		} else {
-			//echo "Error: " . $sql . "<br>" . $connection->error;
+			$answer_from_server['result'] = 'error';
+			$answer_from_server['info'] = 'node removal fail - connection error: ' . $sql_d . "<br>" . mysql_error();
 		}
 	}
 	
@@ -244,7 +252,13 @@ function update_lines($ids_list, $quality, $surface_type) {
             SET $upd_string
             WHERE qline_id in ($ids_list)";
 
-	$res = $connection->query($sql_q);
+	if ($connection->query($sql_q) === TRUE) {
+		$answer_from_server['result'] = 'success';
+		$answer_from_server['info'] = 'lines updated';
+	} else {
+		$answer_from_server['result'] = 'error';
+		$answer_from_server['info'] = 'lines update error: ' . $sql_q . "<br>" . mysql_error();
+	}
 }
 
 function break_qline ($line_id, $percent) {
@@ -304,6 +318,8 @@ function join_qlines ($qline_1_id, $qline_2_id) {
 			$node_to_leave_2 = $node_ids_2[0];
 		} else {
 			//no intersecting nodes, we're done here.
+			$answer_from_server['result'] = 'fail';
+			$answer_from_server['info'] = 'qlines can not be joined - no shared node';
 			return null;
 		}
 		
@@ -315,8 +331,9 @@ function join_qlines ($qline_1_id, $qline_2_id) {
 		
 		
 	} else {
-		//if those are not realated, we just break
-		//break;
+		$answer_from_server['result'] = 'fail';
+		$answer_from_server['info'] = 'qlines can not be joined - only different qlines with one parent can be joined';
+    
 		
 				
 	}
@@ -334,8 +351,8 @@ switch ($global_request_name) {
         if (isset($_REQUEST["quality"])) $quality = htmlspecialchars(stripslashes(trim($_REQUEST["quality"])));
         if (isset($_REQUEST["surface"])) $surface = htmlspecialchars(stripslashes(trim($_REQUEST["surface"])));
         
-        $answer_from_server['result'] = true;
-		$answer_from_server['info'] = 'DB updated';
+        //$answer_from_server['result'] = true;
+		//$answer_from_server['info'] = 'DB updated';
         $jsonGeoData_arr = update_lines($ids_list, $quality, $surface);
         break;
 		
@@ -356,7 +373,7 @@ switch ($global_request_name) {
 
     default:
 		/* Если все проверки пройдены, но ни один обработчик запроса не запустился */
-		$answer_from_server['result'] = false;
+		$answer_from_server['result'] = 'fail';
 		$answer_from_server['info'] = 'Incorrect request name';
 		break;
 } /* Конец switch case */
