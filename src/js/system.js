@@ -40,7 +40,7 @@ function ajaxGet(
 
     xhr.send();
   });
-  
+
 }
 
 
@@ -322,7 +322,7 @@ function googleMapInit() {
         lat: gBounds.f.f
       }
     }
-    
+
     ajaxGet({
       url: 'php/get_json.php',
       request: 'select_geojson',
