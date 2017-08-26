@@ -10,12 +10,12 @@ To get started, first install all the necessary dependencies.
 > npm install
 ```
 
-Run an initial webpack build
+Run an initial gulp+webpack build and start watching dev changes.
 ```
-> webpack
+> gulp watch
 ```
 
-Start the development server (changes will now update live in browser)
+Build production.
 ```
-> npm run start
+> gulp build-prod
 ```
