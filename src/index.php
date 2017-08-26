@@ -14,7 +14,7 @@
   <!-- Убираем выделение элементов на WindowsPhone устройствах -->
   <meta name="msapplication-tap-highlight" content="no"/>
   <!-- MAIN STYLESHEET FILE -->
-  <link rel="stylesheet" href="css/system.css"> <!-- 12kb -->
+  <link rel="stylesheet" href="css/styles.css"> <!-- 12kb -->
 
 </head>
 
@@ -35,8 +35,14 @@
         <button id="go_to_coords" class="controls">></button>
         <input id="map_address_input" class="controls" type="text" placeholder="Search Box">
         <p id="selected_line_options" class="controls">
-
         </p>
+        <button id="update_lines" class="controls">update lines</button>
+    <p id="line_breaking_text" class="controls">
+    Break percent:
+    <input id="break_percent" name="break_perc" min="0" max="99.9" step="0.1" value="" type="number">
+        </p>
+    <button id="break_line" class="controls">break line</button>
+    <button id="join_lines" class="controls">join lines</button>
       </div>
       <div id="map_with_google_api" class="map"></div>
     </section>
@@ -59,7 +65,7 @@
 
 
   <!-- JAVASCRIPT LIBRARIES -->
-  <script language="javascript" type="text/javascript" src="js/system.js"></script>
+  <script language="javascript" type="text/javascript" src="js/bundle.min.js"></script>
 
 </body>
 </html>

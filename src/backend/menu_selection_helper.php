@@ -7,7 +7,7 @@ ini_set('max_execution_time', 600);
 //TODO: decide on empty pavement value
 function surfaces_dropdown($ids, $lang) {
 
-    require_once('passwords.php');
+    require_once('config/config.db.php');
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     
     if (!$connection) {
@@ -72,7 +72,7 @@ function surfaces_dropdown($ids, $lang) {
 }
 
 function quality_value($ids=null) {
-	require_once('passwords.php');
+	require_once('config/config.db.php');
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     
     if (!$connection) {
