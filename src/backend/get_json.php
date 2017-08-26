@@ -6,7 +6,7 @@ ini_set('max_execution_time', 600);
 
 //TODO: remove direct "footway" string. gotta move it through db
 function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
-    require_once('passwords.php');
+    require_once('config/config.db.php');
 
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     

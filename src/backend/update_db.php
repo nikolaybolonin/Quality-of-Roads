@@ -8,7 +8,7 @@ ini_set('max_execution_time', 600);
 
 function establish_connection() {
 	
-	require_once('passwords.php');
+	require_once('config/config.db.php');
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
     
     if (!$connection) {
