@@ -325,8 +325,8 @@ function googleMapInit() {
     };
     var min_lat_100 = Math.floor(bounds.nw.lat*100);
     var max_lat_100 = Math.floor(bounds.se.lat*100);
-    var min_lon_100 = Math.floor(bounds.nw.lon*100);
-    var max_lon_100 = Math.floor(bounds.se.lon*100);
+    var min_lon_100 = Math.floor(bounds.nw.lng*100);
+    var max_lon_100 = Math.floor(bounds.se.lng*100);
     
     for (var i = min_lat_100; i <= max_lat_100; i++) {
       for (var j = min_lon_100; j <= max_lon_100; j++) {
