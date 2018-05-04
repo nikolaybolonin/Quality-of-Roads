@@ -40,7 +40,7 @@ function ajaxGet(
 
     xhr.send();
   });
-
+  
 }
 
 
@@ -308,6 +308,7 @@ function googleMapInit() {
   var updateLinesButton = document.getElementById('update_lines');
   var breakLineButton = document.getElementById('break_line');
   var joinLinesButton = document.getElementById('join_lines');
+  var clearSelectionButton = document.getElementById('clear_selection');
   
   goToCoords.addEventListener("click", function(event) {
 
@@ -321,39 +322,47 @@ function googleMapInit() {
         lng: gBounds.b.f,
         lat: gBounds.f.f
       }
-    }
+    };
+    var min_lat_100 = Math.floor(bounds.nw.lat*100);
+    var max_lat_100 = Math.floor(bounds.se.lat*100);
+    var min_lon_100 = Math.floor(bounds.nw.lon*100);
+    var max_lon_100 = Math.floor(bounds.se.lon*100);
+    
+    for (var i = min_lat_100; i <= max_lat_100; i++) {
+      for (var j = min_lon_100; j <= max_lon_100; j++) {
+        ajaxGet({
+          url: 'php/get_json.php',
+          request: 'select_geojson',
+          data: '&nwlat=' + i/100 + '&nwlng=' + j/100
+        })
+          // 1. Распарсить JSON или вывести ошибку
+          .then(
+            response => {
+              console.info('Fulfilled');
 
-    ajaxGet({
-      url: 'php/get_json.php',
-      request: 'select_geojson',
-      data: '&nwlat=' + bounds.nw.lat + '&nwlng=' + bounds.nw.lng + '&selat=' + bounds.se.lat + '&selng=' + bounds.se.lng
-    })
-      // 1. Распарсить JSON или вывести ошибку
-      .then(
-        response => {
-          console.info('Fulfilled');
+              let data = JSON.parse(response);
+              return data;
+            },
+            error => {
+              console.error('Rejected: ' + response);
+              return false;
+            }
+          )
+          // 2. Распарсить объект в массив + преобразовать строки Y в числа
+          .then(data => {
 
-          let data = JSON.parse(response);
-          return data;
-        },
-        error => {
-          console.error('Rejected: ' + response);
-          return false;
+            if (!!data['result']) {
+
+              console.log(data['data']);
+              // NOTE: This uses cross-domain XHR, and may not work on older browsers.
+              // Use loadGeoJson to load it from file or URL 
+              GoogleMap.data.addGeoJson(data['data']['geojson']);
+            } else {
+              console.error(data['info']);
+            }
+          });
         }
-      )
-      // 2. Распарсить объект в массив + преобразовать строки Y в числа
-      .then(data => {
-
-        if (!!data['result']) {
-
-          console.log(data['data']);
-          // NOTE: This uses cross-domain XHR, and may not work on older browsers.
-          // Use loadGeoJson to load it from file or URL 
-          GoogleMap.data.addGeoJson(data['data']['geojson']);
-        } else {
-          console.error(data['info']);
-        }
-      });
+      }
  
     event.preventDefault();
 
@@ -444,6 +453,14 @@ function googleMapInit() {
 
     xmlhttp.send();
 	
+  }, false);
+  
+  clearSelectionButton.addEventListener("click", function(event) {
+	ids_array = [];
+    GoogleMap.data.forEach(function(feature) {
+      feature.setProperty('isColorful', true);
+    });
+    lineOptions.innerHTML = '';
   }, false);
 
   // Функция применяющая стили по триггеру isColorful

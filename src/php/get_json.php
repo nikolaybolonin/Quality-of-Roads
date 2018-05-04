@@ -5,7 +5,7 @@
 ini_set('max_execution_time', 600); 
 
 //TODO: remove direct "footway" string. gotta move it through db
-function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
+function create_json($nw_lat, $nw_lon) {
     require_once('passwords.php');
 
     $connection = new mysqli($db_server, $db_username, $db_password, $DB_DATA, $db_port);
@@ -15,53 +15,32 @@ function create_json($lat_one, $lon_one, $lat_two, $lon_two) {
         $answer_from_server['info'] = 'connection fail: ' . mysql_error();
     }
     
-    if ($lat_one > $lat_two) {
-        $lat_max = $lat_one;
-        $lat_min = $lat_two;
-    } else {
-        $lat_max = $lat_two;
-        $lat_min = $lat_one;
-    }
-
-    if ($lon_one > $lon_two) {
-        $lon_max = $lon_one;
-        $lon_min = $lon_two;
-    } else {
-        $lon_max = $lon_two;
-        $lon_min = $lon_one;
-    }
-   
-    $sql_q = "SELECT qln.qline_id as line_id,
-                    ns.latitude as start_latitude,
-                    ns.longitude as start_longitude,
-                    ne.latitude as end_latitude,
-                    ne.longitude as end_longitude,
-                    qln.surface_quality as surface_quality,
-                    quality.quality_color_hex as color,
-                    pavement_translation.pavement_name as pavement_type
-                    
-                FROM nodes ns, nodes ne, qlines qln
-                LEFT JOIN pavement_translation
-                ON qln.pavement_type_id = pavement_translation.pavement_id AND
-                    pavement_translation.language_id = 1
-                LEFT JOIN quality
-                ON qln.surface_quality = quality.quality_value
-                WHERE (
-                    qln.qline_start_node_id = ns.node_id  AND
-                    qln.qline_end_node_id = ne.node_id
-                    AND ((
-                        (ns.latitude < $lat_max AND
-                        ne.latitude > $lat_min
-                        ) OR (
-                        ns.latitude > $lat_min AND
-                        ne.latitude < $lat_max)
-                    ) AND (
-                        (ns.longitude < $lon_max AND
-                        ne.longitude > $lon_min
-                        ) OR (
-                        ns.longitude > $lon_min AND
-                        ne.longitude < $lon_max)))
-                    )";
+    $sql_q = "SELECT    qln.qline_id as line_id,
+                        ns.latitude as start_latitude,
+                        ns.longitude as start_longitude,
+                        ne.latitude as end_latitude,
+                        ne.longitude as end_longitude,
+                        qln.surface_quality as surface_quality,
+                        quality.quality_color_hex as color,
+                        pavement_translation.pavement_name as pavement_type
+                        
+                    FROM nodes ns, nodes ne, qlines qln
+                    LEFT JOIN pavement_translation
+                    ON qln.pavement_type_id = pavement_translation.pavement_id AND
+                        pavement_translation.language_id = 1
+                    LEFT JOIN quality
+                    ON qln.surface_quality = quality.quality_value
+                    WHERE (
+                        qln.qline_start_node_id = ns.node_id  AND
+                        qln.qline_end_node_id = ne.node_id
+                        AND qln.qline_id in (
+                            SELECT qline_id FROM line_sections
+                            WHERE section_id in (
+                                SELECT section_id FROM sections
+                                WHERE (
+                                    south_lat = $nw_lat AND
+                                    west_lon = $nw_lon
+                                ))))";
 
     $res = $connection->query($sql_q);
     $rows = array();
@@ -143,12 +122,10 @@ switch ($global_request_name) {
 
     case 'select_geojson':
 
-        if (isset($_REQUEST["nwlng"])) $nwlng = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
+        if (isset($_REQUEST["nwlng"])) $nwlon = htmlspecialchars(stripslashes(trim($_REQUEST["nwlng"])));
         if (isset($_REQUEST["nwlat"])) $nwlat = htmlspecialchars(stripslashes(trim($_REQUEST["nwlat"])));
-        if (isset($_REQUEST["selng"])) $selng = htmlspecialchars(stripslashes(trim($_REQUEST["selng"])));
-        if (isset($_REQUEST["selat"])) $selat = htmlspecialchars(stripslashes(trim($_REQUEST["selat"])));
 
-        $jsonGeoData_arr = create_json($nwlat, $nwlng, $selat, $selng);
+        $jsonGeoData_arr = create_json($nwlat, $nwlon);
         
         if ($jsonGeoData_arr != false){
 			$answer_from_server['result'] = 'success';
